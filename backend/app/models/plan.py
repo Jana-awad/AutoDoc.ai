@@ -14,5 +14,6 @@ class Plan(Base):
     allow_creation= Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    can_manage_templates = Column(Boolean, default=False)
 
     subscriptions = relationship("Subscription", back_populates="plan", cascade="all, delete-orphan")
