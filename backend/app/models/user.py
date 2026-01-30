@@ -17,4 +17,4 @@ class User(Base):
    
     # relationships
     client = relationship("Client", back_populates="users", foreign_keys=[client_id])
-    owned_client = relationship("Client", back_populates="owner", uselist=False, foreign_keys="Client.owner_user_id")
+    #owned_client = relationship("Client", back_populates="owner", uselist=False, foreign_keys="Client.owner_user_id")
