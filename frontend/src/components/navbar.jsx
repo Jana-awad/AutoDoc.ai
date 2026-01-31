@@ -24,7 +24,7 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Update active link based on current route
+  // Update active link based on current route and scroll to top
   useEffect(() => {
     const currentPath = location.pathname;
     const currentLink = navLinks.find(link => link.path === currentPath);
@@ -34,6 +34,8 @@ const Navbar = () => {
       // Default to Home if no match
       setActiveLink('Home');
     }
+    // Scroll to top when route changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
 
   useEffect(() => {
@@ -50,6 +52,8 @@ const Navbar = () => {
   const handleLinkClick = (linkName) => {
     setActiveLink(linkName);
     setIsMobileMenuOpen(false);
+    // Scroll to top when link is clicked
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
