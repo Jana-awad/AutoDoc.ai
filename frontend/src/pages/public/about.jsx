@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Navbar from "../../components/navbar";
 import Footer from "../../components/Footer";
+import visionImage from '../../assets/vision.jpeg';
 
 import './about.css';
 
@@ -184,11 +185,11 @@ const About = () => {
               </div>
             </div>
             <div className="vision-visual">
-              <div className="vision-graphic">
-                <div className="vision-circle vision-circle-1"></div>
-                <div className="vision-circle vision-circle-2"></div>
-                <div className="vision-circle vision-circle-3"></div>
-              </div>
+              <img 
+                src={visionImage} 
+                alt="Our Vision" 
+                className="vision-image"
+              />
             </div>
           </div>
         </div>
