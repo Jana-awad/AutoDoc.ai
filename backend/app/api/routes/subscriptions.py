@@ -13,13 +13,14 @@ from app.crud.crud_subscription import (
 from app.crud.crud_plan import get_plan
 from app.crud.crud_payment import create_payment
 from app.models.user import User
+from app.core.enums import UserRole
 from app.models.subscription import Subscription
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 
 @router.get("/me", response_model=SubscriptionOut)
 def my_subscription(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    if user.role != "superadmin" and user.client_id is None:
+    if user.role != UserRole.SUPER_ADMIN and user.client_id is None:
         raise HTTPException(status_code=400, detail="User has no client")
     client_id = user.client_id
     if client_id is None:
