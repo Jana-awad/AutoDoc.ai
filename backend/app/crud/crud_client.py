@@ -5,7 +5,13 @@ from app.models.client import Client
 def generate_api_key() -> str:
     return secrets.token_urlsafe(32)
 
-def create_client(db: Session, name: str, company_name: str | None = None, email: str | None = None) -> Client:
+def create_client(
+    db: Session,
+    name: str,
+    company_name: str | None = None,
+    email: str | None = None,
+    commit: bool = True,
+) -> Client:
     client = Client(
         name=name,
         company_name=company_name,
@@ -13,8 +19,11 @@ def create_client(db: Session, name: str, company_name: str | None = None, email
         api_key=generate_api_key(),
     )
     db.add(client)
-    db.commit()
-    db.refresh(client)
+    if commit:
+        db.commit()
+        db.refresh(client)
+    else:
+        db.flush()
     return client
 
 def list_clients(db: Session) -> list[Client]:

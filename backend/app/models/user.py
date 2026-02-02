@@ -12,7 +12,15 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     username = Column(String(255), nullable=True)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(SqlEnum(UserRole, name="user_role"), nullable=False, default=UserRole.USER)
+    role = Column(
+        SqlEnum(
+            UserRole,
+            name="user_role",
+            values_callable=lambda enum: [item.value for item in enum],
+        ),
+        nullable=False,
+        default=UserRole.USER,
+    )
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
    
