@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.deps import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.core.enums import UserRole
 from app.core.config import settings
 from app.core.permissions import ensure_user_can_use_template
 from app.crud.crud_document import (
@@ -32,7 +33,7 @@ def upload_document(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    if user.role == "superadmin":
+    if user.role == UserRole.SUPER_ADMIN:
         if client_id is None:
             raise HTTPException(status_code=400, detail="client_id is required for superadmin uploads")
         final_client_id = client_id
@@ -51,7 +52,7 @@ def upload_document(
     with open(save_path, "wb") as f:
         f.write(file.file.read())
 
-    client_id = user.client_id if user.role != "superadmin" else (user.client_id or 0)
+    client_id = user.client_id if user.role != UserRole.SUPER_ADMIN else (user.client_id or 0)
 
     doc = create_document(db, client_id=final_client_id, template_id=template_id, file_url=save_path)
     return doc
@@ -75,7 +76,7 @@ def read_document(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    if user.role != "superadmin":
+    if user.role != UserRole.SUPER_ADMIN:
         if user.client_id is None or doc.client_id != user.client_id:
             raise HTTPException(status_code=403, detail="Forbidden")
 
@@ -93,7 +94,7 @@ def process_document(
         raise HTTPException(status_code=404, detail="Document not found")
 
     # permission
-    if user.role != "superadmin":
+    if user.role != UserRole.SUPER_ADMIN:
         if user.client_id is None or doc.client_id != user.client_id:
             raise HTTPException(status_code=403, detail="Forbidden")
 
@@ -130,7 +131,7 @@ def get_document_extractions(
         raise HTTPException(status_code=404, detail="Document not found")
 
     # permission: superadmin any; others only their client
-    if user.role != "superadmin":
+    if user.role != UserRole.SUPER_ADMIN:
         if user.client_id is None or doc.client_id != user.client_id:
             raise HTTPException(status_code=403, detail="Forbidden")
 
