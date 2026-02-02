@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardElement } from '@stripe/react-stripe-js';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/Footer';
 import './Signup.css';
-// Initialize Stripe - Replace with your publishable key
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 const stripePromise = loadStripe('pk_test_your_publishable_key_here');
-// Stripe Card Element Options
 const cardElementOptions = {
   style: {
     base: {
@@ -49,8 +49,6 @@ const CheckIcon = () => (
 );
 // Signup Form Component
 const SignupForm = ({ plan, onSwitchPlan }) => {
-  const stripe = useStripe();
-  const elements = useElements();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -83,39 +81,36 @@ const SignupForm = ({ plan, onSwitchPlan }) => {
       return;
     }
     
-    if (!stripe || !elements) {
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
-      const cardElement = elements.getElement(CardElement);
-      
-      // Create payment method
-      const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: {
-          name: formData.fullName,
-          email: formData.email,
-        },
-      });
-      if (stripeError) {
-        setError(stripeError.message);
+      const response = await fetch(
+        `${API_BASE_URL}/auth/signup/${isEnterprise ? 'enterprise' : 'business'}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            organization_name: formData.companyName,
+            company_name: formData.companyName,
+            full_name: formData.fullName,
+            email: formData.email,
+            password: formData.password,
+            client_type: isEnterprise ? 'enterprise' : 'business',
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setError(data.detail || 'Unable to create your account. Please try again.');
         setLoading(false);
         return;
       }
-      // Here you would send the paymentMethod.id to your backend
-      // to create a subscription
-      console.log('Payment Method created:', paymentMethod.id);
-      console.log('Form Data:', formData);
-      console.log('Selected Plan:', planName);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       setSuccess(true);
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
+      setError('Unable to reach the server. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -242,7 +237,7 @@ const SignupForm = ({ plan, onSwitchPlan }) => {
         <div className="stripe-section">
           <h3 className="stripe-section-title">
             <CreditCardIcon />
-            Payment Information
+            Payment Information (optional)
           </h3>
           <div className="stripe-element-container">
             <CardElement options={cardElementOptions} />
@@ -253,10 +248,10 @@ const SignupForm = ({ plan, onSwitchPlan }) => {
             {error}
           </div>
         )}
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className={`submit-button ${isEnterprise ? '' : 'business-btn'} ${loading ? 'loading' : ''}`}
-          disabled={!stripe || loading}
+          disabled={loading}
         >
           <span className="button-text">
             {loading ? 'Processing...' : `Create ${planName} Account`}
@@ -312,15 +307,15 @@ const Signup = () => {
           <div className="trust-section">
             <div className="trust-item">
               <LockIcon />
-              <span>Payments secured by Stripe</span>
+              <span>Secure authentication workflow</span>
             </div>
             <div className="trust-item">
               <ShieldIcon />
               <span>Enterprise-grade encryption</span>
             </div>
             <div className="trust-item">
-              <CreditCardIcon />
-              <span>We never store card details</span>
+              <CheckIcon />
+              <span>Credentials protected with secure hashing</span>
             </div>
           </div>
         </div>
