@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.user import User
+from app.core.enums import UserRole
 from app.core.security import hash_password, verify_password
 from app.core.limits import ensure_client_can_add_user
 from app.core.limits import ensure_client_can_add_user  
@@ -12,7 +13,7 @@ def create_user(
     email: str,
     password: str,
     username: str | None = None,
-    role: str = "business_client_admin",
+    role: UserRole = UserRole.BUSINESS_ADMIN,
     client_id: int | None = None,
 ):
     # enforce user limit (only for client users)
