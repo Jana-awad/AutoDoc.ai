@@ -1,9 +1,9 @@
 import SuperNav from "../../components/SuperNav";
-import "./Sdashboard.css";
+import "./monitoring.css";
 
-function Sdashboard() {
+function Monitoring() {
   return (
-    <div className="super-dashboard">
+    <div className="super-monitoring">
       <SuperNav
         userName="Super Admin"
         userEmail="admin@autodoc.ai"
@@ -11,14 +11,14 @@ function Sdashboard() {
         onSettings={() => {}}
         onSearch={() => {}}
       />
-      <main className="super-dashboard-main">
+      <main className="super-monitoring-main">
         <div className="container">
-          <h1>Super Dashboard</h1>
-          <p>Welcome to the admin workspace.</p>
+          <h1>Monitoring</h1>
+          <p>Track platform health, usage trends, and system alerts.</p>
         </div>
       </main>
     </div>
   );
 }
 
-export default Sdashboard;
+export default Monitoring;
