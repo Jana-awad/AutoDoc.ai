@@ -15,9 +15,11 @@ def create_user(
     username: str | None = None,
     role: UserRole = UserRole.BUSINESS_ADMIN,
     client_id: int | None = None,
+    enforce_limits: bool = True,
+    commit: bool = True,
 ):
     # enforce user limit (only for client users)
-    if client_id is not None:
+    if client_id is not None and enforce_limits:
         ensure_client_can_add_user(db, client_id)
 
     user = User(
@@ -28,8 +30,11 @@ def create_user(
         client_id=client_id,
     )
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    if commit:
+        db.commit()
+        db.refresh(user)
+    else:
+        db.flush()
     return user
 
 def authenticate(db: Session, email: str, password: str) -> User | None:
