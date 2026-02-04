@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
 from app.schemas.user import UserCreate, UserOut
+from app.schemas.signup import SignupRequest, SignupResponse
 from app.crud.crud_user import get_by_email, create_user, authenticate
+from app.crud.crud_client import create_client
 from app.core.jwt import create_access_token
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -46,6 +48,63 @@ def register(
     )
 
     return user
+
+
+def _validate_client_type(payload: SignupRequest, expected: str) -> None:
+    if payload.client_type != expected:
+        raise HTTPException(status_code=400, detail=f"client_type must be '{expected}'")
+
+
+def _signup_with_role(
+    payload: SignupRequest,
+    role: UserRole,
+    db: Session,
+) -> SignupResponse:
+    existing = get_by_email(db, payload.email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    try:
+        client = create_client(
+            db,
+            name=payload.organization_name,
+            company_name=payload.company_name or payload.organization_name,
+            email=payload.email,
+            commit=False,
+        )
+        user = create_user(
+            db,
+            email=payload.email,
+            password=payload.password,
+            username=payload.full_name,
+            role=role,
+            client_id=client.id,
+            enforce_limits=False,
+            commit=False,
+        )
+        db.commit()
+        db.refresh(client)
+        db.refresh(user)
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Signup failed. Please try again.")
+
+    return SignupResponse(client=client, user=user)
+
+
+@router.post("/signup/business", response_model=SignupResponse, status_code=201)
+def signup_business(payload: SignupRequest, db: Session = Depends(get_db)):
+    _validate_client_type(payload, "business")
+    return _signup_with_role(payload, UserRole.BUSINESS_ADMIN, db)
+
+
+@router.post("/signup/enterprise", response_model=SignupResponse, status_code=201)
+def signup_enterprise(payload: SignupRequest, db: Session = Depends(get_db)):
+    _validate_client_type(payload, "enterprise")
+    return _signup_with_role(payload, UserRole.ENTERPRISE_ADMIN, db)
 
 @router.post("/login")
 def login(payload: dict, db: Session = Depends(get_db)):
