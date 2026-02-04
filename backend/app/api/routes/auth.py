@@ -7,6 +7,7 @@ from app.crud.crud_user import get_by_email, create_user, authenticate
 from app.core.jwt import create_access_token
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.core.enums import UserRole
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -23,7 +24,7 @@ def register(
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # Decide client_id safely
-    if current_user.role == "superadmin":
+    if current_user.role == UserRole.SUPER_ADMIN:
         # superadmin CAN choose client_id
         if payload.client_id is None:
             raise HTTPException(status_code=400, detail="client_id is required")
