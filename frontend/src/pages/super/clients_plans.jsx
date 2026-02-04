@@ -1,9 +1,9 @@
 import SuperNav from "../../components/SuperNav";
-import "./Sdashboard.css";
+import "./clients_plans.css";
 
-function Sdashboard() {
+function ClientsPlans() {
   return (
-    <div className="super-dashboard">
+    <div className="super-clients-plans">
       <SuperNav
         userName="Super Admin"
         userEmail="admin@autodoc.ai"
@@ -11,14 +11,14 @@ function Sdashboard() {
         onSettings={() => {}}
         onSearch={() => {}}
       />
-      <main className="super-dashboard-main">
+      <main className="super-clients-plans-main">
         <div className="container">
-          <h1>Super Dashboard</h1>
-          <p>Welcome to the admin workspace.</p>
+          <h1>Clients &amp; Plans</h1>
+          <p>Manage accounts, subscriptions, and plan allocations.</p>
         </div>
       </main>
     </div>
   );
 }
 
-export default Sdashboard;
+export default ClientsPlans;
