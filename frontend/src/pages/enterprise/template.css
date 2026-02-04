@@ -1,0 +1,17 @@
+.enterprise-template {
+  min-height: 100vh;
+  background: var(--gradient-hero);
+  padding: calc(var(--navbar-height) + var(--space-16)) var(--container-padding)
+    var(--space-16);
+}
+
+.enterprise-template h1 {
+  font-size: var(--font-size-4xl);
+  color: var(--color-navy-deep);
+  margin-bottom: var(--space-3);
+}
+
+.enterprise-template p {
+  color: var(--color-gray-500);
+  max-width: 520px;
+}

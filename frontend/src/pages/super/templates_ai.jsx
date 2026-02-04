@@ -1,9 +1,9 @@
 import SuperNav from "../../components/SuperNav";
-import "./Sdashboard.css";
+import "./templates_ai.css";
 
-function Sdashboard() {
+function TemplatesAi() {
   return (
-    <div className="super-dashboard">
+    <div className="super-templates-ai">
       <SuperNav
         userName="Super Admin"
         userEmail="admin@autodoc.ai"
@@ -11,14 +11,14 @@ function Sdashboard() {
         onSettings={() => {}}
         onSearch={() => {}}
       />
-      <main className="super-dashboard-main">
+      <main className="super-templates-ai-main">
         <div className="container">
-          <h1>Super Dashboard</h1>
-          <p>Welcome to the admin workspace.</p>
+          <h1>Templates AI</h1>
+          <p>Organize extraction templates and AI workflows.</p>
         </div>
       </main>
     </div>
   );
 }
 
-export default Sdashboard;
+export default TemplatesAi;
