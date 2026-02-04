@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.document import Document
+from app.core.enums import UserRole
 from app.models.extraction import Extraction
 from app.models.field import Field
 from datetime import datetime
@@ -24,7 +25,7 @@ def list_documents_for_user(db: Session, user) -> list[Document]:
     q = db.query(Document)
 
     # superadmin sees everything
-    if user.role != "superadmin":
+    if user.role != UserRole.SUPER_ADMIN:
         if user.client_id is None:
             return []
         q = q.filter(Document.client_id == user.client_id)

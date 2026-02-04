@@ -42,9 +42,9 @@
   .signup-main {
     flex: 1;
     display: flex;
-    align-items: center;
+  align-items: flex-start;
     justify-content: center;
-    padding: var(--space-20) var(--container-padding);
+  padding: calc(var(--navbar-height) + var(--space-12)) var(--container-padding) var(--space-24);
     position: relative;
     z-index: 1;
   }
@@ -54,12 +54,13 @@
     max-width: 520px;
     position: relative;
     perspective: 1000px;
+  margin-bottom: var(--space-12);
   }
   /* Form Wrapper for Animations */
   .signup-form-wrapper {
     position: relative;
     width: 100%;
-    min-height: 700px;
+  min-height: 860px;
   }
   /* Signup Card */
   .signup-card {
@@ -473,6 +474,6 @@
       gap: var(--space-3);
     }
     .signup-form-wrapper {
-      min-height: 780px;
+    min-height: 960px;
     }
   }

@@ -10,20 +10,14 @@ const Pricing = () => {
     'Secure API access with encryption',
     'Up to 10 team members',
     'Standard processing priority',
-    'Versioned JSON outputs',
-    'Audit-friendly structured data',
-    'Encrypted document handling',
-    'Email support (24-48h response)',
+    'Usage analytics & monitoring dashboard',
   ];
 
   const enterpriseFeatures = [
     'Create & manage custom templates',
     'Unlimited team members',
     'Priority & faster processing',
-    'Custom schema definitions',
-    'Dedicated API rate limits',
     'Enterprise-grade security & privacy',
-    'Compliance-ready architecture (SOC2, HIPAA)',
     'Multi-workspace support',
     'Usage analytics & monitoring dashboard',
   ];
