@@ -1,8 +1,11 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/Footer';
 import './Login.css';
+import { getRoleHome, useAuth } from '../../context/AuthContext';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,8 +13,16 @@ const Login = () => {
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingForm, setLoadingForm] = useState(false);
   const [error, setError] = useState(null);
+  const { loginWithToken, isAuthenticated, role, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated && role) {
+      navigate(getRoleHome(role), { replace: true });
+    }
+  }, [loading, isAuthenticated, role, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -21,27 +32,53 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setLoadingForm(true);
     setError(null);
 
     // Validate inputs
     if (!formData.email || !formData.password) {
       setError('Please enter both email and password.');
-      setLoading(false);
+      setLoadingForm(false);
       return;
     }
 
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Login attempt:', formData.email);
-      // Here you would integrate with your authentication backend
-      // For now, we'll just show an error as placeholder
-      setError('Invalid email or password. Please try again.');
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setError(data.detail || 'Invalid email or password. Please try again.');
+        setLoadingForm(false);
+        return;
+      }
+
+      const token = data.access_token;
+      if (!token) {
+        setError('Login failed. Please try again.');
+        setLoadingForm(false);
+        return;
+      }
+
+      const session = loginWithToken(token);
+      if (!session) {
+        setError('Login failed. Please try again.');
+        setLoadingForm(false);
+        return;
+      }
+
+      navigate(getRoleHome(session.role), { replace: true });
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError('Unable to reach the server. Please try again.');
     } finally {
-      setLoading(false);
+      setLoadingForm(false);
     }
   };
 
@@ -222,10 +259,10 @@ const Login = () => {
 
                 <button
                   type="submit"
-                  className={`login-submit-btn ${loading ? 'loading' : ''}`}
-                  disabled={loading}
+                  className={`login-submit-btn ${loadingForm ? 'loading' : ''}`}
+                  disabled={loadingForm}
                 >
-                  {loading ? 'Signing in...' : 'Sign In'}
+                  {loadingForm ? 'Signing in...' : 'Sign In'}
                 </button>
               </form>
 
