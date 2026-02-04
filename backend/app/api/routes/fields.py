@@ -7,6 +7,7 @@ from app.schemas.field import FieldCreate, FieldOut
 from app.crud.crud_template import get_template
 from app.crud.crud_field import create_field, list_fields
 from app.models.user import User
+from app.core.enums import UserRole
 
 router = APIRouter(prefix="/fields", tags=["fields"])
 
@@ -22,7 +23,7 @@ def create(
         raise HTTPException(status_code=404, detail="Template not found")
 
     # enterprise client admin: can modify ONLY their client templates (not global)
-    if user.role == "enterprise_client_admin":
+    if user.role == UserRole.ENTERPRISE_ADMIN:
         if t.is_global or t.client_id != user.client_id:
             raise HTTPException(status_code=403, detail="Cannot modify this template")
 
@@ -37,11 +38,11 @@ def list_for_template(template_id: int, db: Session = Depends(get_db), user: Use
         raise HTTPException(status_code=404, detail="Template not found")
 
     # business admin: global only
-    if user.role == "business_client_admin" and not t.is_global:
+    if user.role == UserRole.BUSINESS_ADMIN and not t.is_global:
         raise HTTPException(status_code=403, detail="Business plan users can only use global templates")
 
     # other users: can view global OR same client (unless superadmin)
-    if not t.is_global and user.role != "superadmin" and t.client_id != user.client_id:
+    if not t.is_global and user.role != UserRole.SUPER_ADMIN and t.client_id != user.client_id:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     return list_fields(db, template_id)

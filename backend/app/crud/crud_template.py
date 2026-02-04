@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.models.template import Template
 from app.models.user import User
+from app.core.enums import UserRole
 
 def create_template(db: Session, name: str, description: str | None, client_id: int | None, is_global: bool) -> Template:
     t = Template(name=name, description=description, client_id=client_id, is_global=is_global)
@@ -15,7 +16,7 @@ def get_template(db: Session, template_id: int) -> Template | None:
 
 def list_templates_for_user(db: Session, user: User) -> list[Template]:
     # Business client admin: GLOBAL ONLY
-    if user.role == "business_client_admin":
+    if user.role == UserRole.BUSINESS_ADMIN:
         return db.query(Template).filter(Template.is_global == True).order_by(Template.id.desc()).all()
 
     # Enterprise client admin + normal users: global + their client templates
