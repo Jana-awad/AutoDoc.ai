@@ -5,6 +5,7 @@ import Pricing from "./pages/public/Pricing";
 import Signup from "./pages/public/Signup";
 import Contact from "./pages/public/Contact";
 import Login from "./pages/public/Login";
+import Sdashboard from "./pages/super/Sdashboard";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/super" element={<Sdashboard />} />
       </Routes>
     </Router>
   );
