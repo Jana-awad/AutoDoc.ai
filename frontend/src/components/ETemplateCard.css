@@ -1,0 +1,105 @@
+/* ETemplateCard - 3D glass card for template item */
+.e-template-card {
+  padding: var(--space-5);
+  border-radius: var(--radius-xl);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.e-template-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glass-shadow-hover), var(--shadow-glow-soft);
+}
+
+.e-template-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.e-template-card-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+  line-height: var(--line-height-snug);
+}
+
+.e-template-card-status {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.e-template-card-status--active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.e-template-card-status--training {
+  background: rgba(234, 179, 8, 0.2);
+  color: #a16207;
+}
+
+.e-template-card-status--disabled {
+  background: var(--color-gray-200);
+  color: var(--color-gray-600);
+}
+
+.e-template-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+
+.e-template-card-id {
+  font-family: ui-monospace, monospace;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.e-template-card-type {
+  color: var(--color-ocean);
+  font-weight: var(--font-weight-medium);
+}
+
+.e-template-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.e-template-card-date {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-400);
+}
+
+.e-template-card-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.e-template-card-btn {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ocean);
+  background: rgba(59, 130, 198, 0.1);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.e-template-card-btn:hover {
+  background: rgba(59, 130, 198, 0.2);
+  color: var(--color-navy-deep);
+}

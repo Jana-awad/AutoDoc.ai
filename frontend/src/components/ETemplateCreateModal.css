@@ -1,0 +1,190 @@
+/* ETemplateCreateModal - Form sections and field editor */
+.e-template-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.e-template-create-section {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+}
+
+.e-template-create-section-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+  margin-bottom: var(--space-4);
+}
+
+.e-template-create-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.e-template-create-section-header .e-template-create-section-title {
+  margin-bottom: 0;
+}
+
+.e-template-create-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.e-template-create-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-navy-deep);
+}
+
+.e-template-create-input,
+.e-template-create-select {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-base);
+  color: var(--color-navy-deep);
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-fast);
+}
+
+.e-template-create-input:focus,
+.e-template-create-select:focus {
+  outline: none;
+  border-color: var(--color-ocean);
+}
+
+.e-template-create-input--sm {
+  max-width: 120px;
+}
+
+.e-template-create-upload {
+  position: relative;
+}
+
+.e-template-create-upload-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.e-template-create-upload-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: var(--space-6);
+  background: var(--glass-bg);
+  border: 2px dashed var(--color-gray-300);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-fast);
+}
+
+.e-template-create-upload-label:hover {
+  border-color: var(--color-ocean);
+  color: var(--color-ocean);
+  background: rgba(59, 130, 198, 0.05);
+}
+
+.e-template-create-upload-name {
+  color: var(--color-ocean);
+  font-weight: var(--font-weight-medium);
+}
+
+.e-template-create-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.e-template-create-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.e-template-create-field-name {
+  font-family: ui-monospace, monospace;
+  font-size: var(--font-size-sm);
+}
+
+.e-template-create-field-label {
+  min-width: 0;
+}
+
+.e-template-create-field-type {
+  min-width: 100px;
+}
+
+.e-template-create-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-gray-600);
+  cursor: pointer;
+}
+
+.e-template-create-remove {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--color-gray-500);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.e-template-create-remove:hover {
+  background: var(--color-gray-100);
+  color: var(--color-navy-deep);
+}
+
+.e-template-create-add-field {
+  font-size: var(--font-size-sm);
+}
+
+.e-template-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 640px) {
+  .e-template-create-row {
+    grid-template-columns: 1fr;
+  }
+
+  .e-template-create-field-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .e-template-create-field-type,
+  .e-template-create-check {
+    grid-column: span 2;
+  }
+}
