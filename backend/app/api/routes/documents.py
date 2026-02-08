@@ -28,7 +28,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 @router.post("/upload", response_model=DocumentOut)
 def upload_document(
     template_id: int = Form(...),
-    client_id: int | None = Form(None),   # ✅ add this
+    client_id: int | None = Form(None),  
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
