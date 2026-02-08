@@ -7,6 +7,9 @@
   --color-navy-medium: #1e3a5f;
   --color-navy-light: #2d4a6f;
   
+  /* Primary (alias for ocean) */
+  --color-primary: #3b82c6;
+
   /* Blue Spectrum */
   --color-ocean: #3b82c6;
   --color-ocean-light: #5ba3e0;

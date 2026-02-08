@@ -1,0 +1,78 @@
+/* ERolePermissions - Role cards */
+.e-role-permissions {
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+}
+
+.e-role-permissions-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+  margin-bottom: var(--space-2);
+}
+
+.e-role-permissions-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  margin-bottom: var(--space-5);
+}
+
+.e-role-permissions-desc strong {
+  color: var(--color-ocean);
+}
+
+.e-role-permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.e-role-permissions-item {
+  padding: var(--space-4);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border-light);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-fast);
+}
+
+.e-role-permissions-item--current {
+  border-color: var(--color-ocean);
+  box-shadow: 0 0 0 1px rgba(59, 130, 198, 0.2);
+}
+
+.e-role-permissions-role {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+  margin-bottom: var(--space-2);
+}
+
+.e-role-permissions-desc-item {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  margin-bottom: var(--space-3);
+  line-height: var(--line-height-relaxed);
+}
+
+.e-role-permissions-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.e-role-permissions-badge {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  border-radius: var(--radius-sm);
+}
+
+.e-role-permissions-item--current .e-role-permissions-badge {
+  background: rgba(59, 130, 198, 0.15);
+  color: var(--color-ocean);
+}
