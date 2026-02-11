@@ -67,7 +67,7 @@ def _signup_with_role(
     try:
         client = create_client(
             db,
-            name=payload.organization_name,
+            name=payload.full_name,
             company_name=payload.company_name or payload.organization_name,
             email=payload.email,
             commit=False,

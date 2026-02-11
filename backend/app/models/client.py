@@ -11,13 +11,12 @@ class Client(Base):
     name = Column(String(255), nullable=False, index=True)
     company_name = Column(String(255), nullable=True)
     email = Column(String(255), nullable=True)
-    #phone = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     api_key = Column(String(255), unique=True, nullable=True, index=True)
     #billing_contact = Column(String(255), nullable=True)
    # address = Column(String(500), nullable=True)
     #is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
+    #phone = Column(String(50), nullable=True)
     # optional owner user (one-to-one-ish): a user who is primary admin for this client
    # owner_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
