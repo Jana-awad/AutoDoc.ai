@@ -31,3 +31,11 @@ def list_templates_for_user(db: Session, user: User) -> list[Template]:
 def delete_template(db: Session, template: Template) -> None:
     db.delete(template)
     db.commit()
+def update_template(db: Session, template: Template, name: str, description: str | None, is_global: bool) -> Template:
+    template.name = name
+    template.description = description
+    template.is_global = is_global
+    db.add(template)
+    db.commit()
+    db.refresh(template)
+    return template

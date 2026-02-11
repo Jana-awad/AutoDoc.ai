@@ -1,6 +1,14 @@
 from datetime import datetime
 from pydantic import BaseModel
 
+class PaymentCreate(BaseModel):
+    subscription_id: int
+    client_id: int
+    status: str = "paid"
+
+class PaymentUpdate(BaseModel):
+    status: str | None = None
+
 class PaymentOut(BaseModel):
     id: int
     subscription_id: int
