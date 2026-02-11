@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from app.db.deps import get_db
 from app.api.deps import get_current_user
 from app.schemas.payment import PaymentOut, PaymentCreate, PaymentUpdate
-from app.crud.crud_payment import delete_payment, get_payment, list_payments_for_client, create_payment, update_payment
+from app.crud.crud_payment import (
+    delete_payment,
+    get_payment,
+    list_payments_for_client,
+    create_payment,
+    update_payment,
+)
 from app.models.user import User
 from app.core.enums import UserRole
 
@@ -62,6 +67,5 @@ def refund_payment_route(payment_id: int, db: Session = Depends(get_db), user: U
         raise HTTPException(status_code=404, detail="Payment not found")
     if user.role != UserRole.SUPER_ADMIN and payment.client_id != user.client_id:
         raise HTTPException(status_code=403, detail="Forbidden")
-    # For simplicity, we just delete the payment to "refund" it. In a real system, you'd integrate with the payment processor's refund API.
     delete_payment(db, payment)
     return {"detail": "Payment refunded"}
