@@ -5,6 +5,10 @@ class SubscriptionCreate(BaseModel):
     client_id: int
     plan_id: int
 
+class SubscriptionUpdate(BaseModel):
+    plan_id: int | None = None
+    status: str | None = None
+
 class SubscriptionOut(BaseModel):
     id: int
     client_id: int

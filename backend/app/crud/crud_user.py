@@ -66,3 +66,13 @@ def update_user_role(db: Session, user: User, new_role: str) -> User:
     db.commit()
     db.refresh(user)
     return user
+
+def update_user(db: Session, user: User, email: str | None, username: str | None) -> User:
+    if email is not None:
+        user.email = email
+    if username is not None:
+        user.username = username
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user

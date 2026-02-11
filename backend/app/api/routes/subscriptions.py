@@ -3,12 +3,16 @@ from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
 from app.api.deps import get_current_user, require_superadmin
-from app.schemas.subscription import SubscriptionCreate, SubscriptionOut
+from app.schemas.subscription import SubscriptionCreate, SubscriptionOut, SubscriptionUpdate
 from app.crud.crud_subscription import (
     get_active_subscription,
     create_subscription,
     cancel_subscription,
     change_subscription_plan,
+    list_subscriptions,
+    get_subscription,
+    update_subscription,
+    delete_subscription,
 )
 from app.crud.crud_plan import get_plan
 from app.crud.crud_payment import create_payment
@@ -77,3 +81,38 @@ def change_plan(
     sub = change_subscription_plan(db, client_id, new_plan_id)
     create_payment(db, client_id=client_id, subscription_id=sub.id, status="paid")
     return sub
+
+@router.get("", response_model=list[SubscriptionOut])
+def list_all(db: Session = Depends(get_db), _super: User = Depends(require_superadmin)):
+    return list_subscriptions(db)
+
+@router.get("/{subscription_id}", response_model=SubscriptionOut)
+def read_one(subscription_id: int, db: Session = Depends(get_db), _super: User = Depends(require_superadmin)):
+    sub = get_subscription(db, subscription_id)
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return sub
+
+@router.put("/{subscription_id}", response_model=SubscriptionOut)
+def update_one(
+    subscription_id: int,
+    payload: SubscriptionUpdate,
+    db: Session = Depends(get_db),
+    _super: User = Depends(require_superadmin),
+):
+    sub = get_subscription(db, subscription_id)
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    if payload.plan_id is not None:
+        plan = get_plan(db, payload.plan_id)
+        if not plan or not plan.is_active:
+            raise HTTPException(status_code=400, detail="Invalid plan_id")
+    return update_subscription(db, sub, payload.plan_id, payload.status)
+
+@router.delete("/{subscription_id}")
+def delete_one(subscription_id: int, db: Session = Depends(get_db), _super: User = Depends(require_superadmin)):
+    sub = get_subscription(db, subscription_id)
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    delete_subscription(db, sub)
+    return {"detail": "Subscription deleted"}

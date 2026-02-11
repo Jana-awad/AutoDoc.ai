@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
 from app.api.deps import require_superadmin
-from app.schemas.client import ClientCreate, ClientOut
-from app.crud.crud_client import create_client, list_clients, get_client
+from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
+from app.crud.crud_client import create_client, delete_client, list_clients, get_client, update_client
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
@@ -25,3 +25,16 @@ def read_one(client_id: int, db: Session = Depends(get_db), _super=Depends(requi
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     return client
+@router.delete("/{client_id}")
+def delete_client_route(client_id: int, db: Session = Depends(get_db), _super=Depends(require_superadmin)):
+    client = get_client(db, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    delete_client(db, client)
+    return {"detail": "Client deleted"}
+@router.put("/{client_id}", response_model=ClientOut)
+def update_client_route(client_id: int, payload: ClientUpdate, db: Session = Depends(get_db), _super=Depends(require_superadmin)):
+    client = get_client(db, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return update_client(db, client, payload.name, payload.company_name, payload.email)
