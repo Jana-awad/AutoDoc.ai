@@ -28,4 +28,3 @@ def update_payment(db: Session, payment: Payment, status: str | None) -> Payment
     db.commit()
     db.refresh(payment)
     return payment
-    
