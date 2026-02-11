@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './SuperNav.css';
 
 const LogoMark = () => (
@@ -104,25 +105,25 @@ const defaultMegaMenus = {
       {
         heading: 'Template Studio',
         items: [
-          { title: 'Template Builder', description: 'Design structured templates in minutes.', path: '/templates/builder', icon: <TemplateIcon /> },
-          { title: 'Field Library', description: 'Reusable fields with validation rules.', path: '/templates/fields', icon: <PipelineIcon /> },
-          { title: 'Version Control', description: 'Track template changes with confidence.', path: '/templates/versions', icon: <ShieldIcon /> },
+          { title: 'Template Builder', description: 'Design structured templates in minutes.', path: '/super/templates-ai', icon: <TemplateIcon /> },
+          { title: 'Field Library', description: 'Reusable fields with validation rules.', path: '/super/templates-ai', icon: <PipelineIcon /> },
+          { title: 'Version Control', description: 'Track template changes with confidence.', path: '/super/templates-ai', icon: <ShieldIcon /> },
         ],
       },
       {
         heading: 'AI Pipeline',
         items: [
-          { title: 'Model Tuning', description: 'Fine-tune extraction accuracy.', path: '/ai/tuning', icon: <SparkIcon /> },
-          { title: 'Data Normalization', description: 'Normalize outputs across sources.', path: '/ai/normalize', icon: <PipelineIcon /> },
-          { title: 'Confidence Scoring', description: 'Review low-confidence fields.', path: '/ai/confidence', icon: <ShieldIcon /> },
+          { title: 'Model Tuning', description: 'Fine-tune extraction accuracy.', path: '/super/templates-ai', icon: <SparkIcon /> },
+          { title: 'Data Normalization', description: 'Normalize outputs across sources.', path: '/super/templates-ai', icon: <PipelineIcon /> },
+          { title: 'Confidence Scoring', description: 'Review low-confidence fields.', path: '/super/templates-ai', icon: <ShieldIcon /> },
         ],
       },
       {
         heading: 'Automation',
         items: [
-          { title: 'Workflow Rules', description: 'Route documents automatically.', path: '/automation/rules', icon: <PipelineIcon /> },
-          { title: 'Webhooks', description: 'Stream results to your systems.', path: '/automation/webhooks', icon: <TemplateIcon /> },
-          { title: 'Quality Gates', description: 'Enforce validation checkpoints.', path: '/automation/quality', icon: <ShieldIcon /> },
+          { title: 'Workflow Rules', description: 'Route documents automatically.', path: '/super/templates-ai', icon: <PipelineIcon /> },
+          { title: 'Webhooks', description: 'Stream results to your systems.', path: '/super/templates-ai', icon: <TemplateIcon /> },
+          { title: 'Quality Gates', description: 'Enforce validation checkpoints.', path: '/super/templates-ai', icon: <ShieldIcon /> },
         ],
       },
     ],
@@ -134,25 +135,25 @@ const defaultMegaMenus = {
       {
         heading: 'Client Management',
         items: [
-          { title: 'Client Directory', description: 'View and segment client accounts.', path: '/clients', icon: <ClientsIcon /> },
-          { title: 'Team Access', description: 'Invite admins and manage roles.', path: '/clients/access', icon: <ShieldIcon /> },
-          { title: 'Usage Insights', description: 'Track adoption at a glance.', path: '/clients/insights', icon: <MonitorIcon /> },
+          { title: 'Client Directory', description: 'View and segment client accounts.', path: '/super/clients-plans', icon: <ClientsIcon /> },
+          { title: 'Team Access', description: 'Invite admins and manage roles.', path: '/super/clients-plans', icon: <ShieldIcon /> },
+          { title: 'Usage Insights', description: 'Track adoption at a glance.', path: '/super/clients-plans', icon: <MonitorIcon /> },
         ],
       },
       {
         heading: 'Plans',
         items: [
-          { title: 'Plan Builder', description: 'Configure tiers and limits.', path: '/plans', icon: <BillingIcon /> },
-          { title: 'Billing Controls', description: 'Manage renewals and invoices.', path: '/plans/billing', icon: <BillingIcon /> },
-          { title: 'Entitlements', description: 'Define feature access by plan.', path: '/plans/entitlements', icon: <ShieldIcon /> },
+          { title: 'Plan Builder', description: 'Configure tiers and limits.', path: '/super/clients-plans', icon: <BillingIcon /> },
+          { title: 'Billing Controls', description: 'Manage renewals and invoices.', path: '/super/clients-plans', icon: <BillingIcon /> },
+          { title: 'Entitlements', description: 'Define feature access by plan.', path: '/super/clients-plans', icon: <ShieldIcon /> },
         ],
       },
       {
         heading: 'Success',
         items: [
-          { title: 'Onboarding', description: 'Guide new customers quickly.', path: '/success/onboarding', icon: <PipelineIcon /> },
-          { title: 'Health Scores', description: 'Spot churn risks early.', path: '/success/health', icon: <MonitorIcon /> },
-          { title: 'Support Queue', description: 'Escalate issues instantly.', path: '/success/support', icon: <ShieldIcon /> },
+          { title: 'Onboarding', description: 'Guide new customers quickly.', path: '/super/clients-plans', icon: <PipelineIcon /> },
+          { title: 'Health Scores', description: 'Spot churn risks early.', path: '/super/clients-plans', icon: <MonitorIcon /> },
+          { title: 'Support Queue', description: 'Escalate issues instantly.', path: '/super/clients-plans', icon: <ShieldIcon /> },
         ],
       },
     ],
@@ -166,6 +167,8 @@ const SuperNav = ({
   onSearch,
   onSettings,
 }) => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const navRef = useRef(null);
   const searchRef = useRef(null);
@@ -184,10 +187,10 @@ const SuperNav = ({
 
   const navLinks = useMemo(
     () => [
-      { name: 'Home', path: '/' },
-      { name: 'Template & AI', path: '/templates', mega: 'templates' },
-      { name: 'Clients & Plans', path: '/clients', mega: 'clients' },
-      { name: 'Monitoring', path: '/monitoring' },
+      { name: 'Dashboard', path: '/super' },
+      { name: 'Template & AI', path: '/super/templates-ai', mega: 'templates' },
+      { name: 'Clients & Plans', path: '/super/clients-plans', mega: 'clients' },
+      { name: 'Monitoring', path: '/super/monitoring' },
     ],
     []
   );
@@ -257,8 +260,8 @@ const SuperNav = ({
   }, [isMobileOpen]);
 
   const isActive = (path) => {
-    if (path === '/') {
-      return location.pathname === '/';
+    if (path === '/super') {
+      return location.pathname === '/super';
     }
     return location.pathname.startsWith(path);
   };
@@ -267,6 +270,20 @@ const SuperNav = ({
     event.preventDefault();
     if (onSearch) {
       onSearch(searchValue);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    if (onLogout) {
+      onLogout();
+    }
+    navigate('/login');
+  };
+
+  const handleSettings = () => {
+    if (onSettings) {
+      onSettings();
     }
   };
 
@@ -302,7 +319,7 @@ const SuperNav = ({
     >
       <div className="supernav-inner">
         <div className="supernav-left">
-          <Link to="/" className="supernav-logo" aria-label="AutoDoc AI">
+          <Link to="/super" className="supernav-logo" aria-label="AutoDoc AI">
             <span className="supernav-logo-mark">
               <LogoMark />
             </span>
@@ -394,7 +411,7 @@ const SuperNav = ({
           <button
             className="supernav-logout"
             type="button"
-            onClick={onLogout}
+            onClick={handleLogout}
             aria-label="Log out"
           >
             <LogoutIcon />
@@ -417,10 +434,10 @@ const SuperNav = ({
                   <span>{userEmail}</span>
                 </div>
               </div>
-              <button type="button" role="menuitem" onClick={onSettings}>
+              <button type="button" role="menuitem" onClick={handleSettings}>
                 Settings
               </button>
-              <button type="button" role="menuitem" onClick={onLogout}>
+              <button type="button" role="menuitem" onClick={handleLogout}>
                 Log out
               </button>
             </div>
@@ -442,7 +459,7 @@ const SuperNav = ({
 
       <div className={`supernav-mobile ${isMobileOpen ? 'open' : ''}`} aria-hidden={!isMobileOpen}>
         <div className="supernav-mobile-header">
-          <Link to="/" className="supernav-logo" aria-label="AutoDoc AI">
+          <Link to="/super" className="supernav-logo" aria-label="AutoDoc AI">
             <span className="supernav-logo-mark">
               <LogoMark />
             </span>
@@ -496,10 +513,10 @@ const SuperNav = ({
           })}
 
           <div className="supernav-mobile-actions">
-            <button type="button" className="supernav-mobile-action" onClick={onSettings}>
+            <button type="button" className="supernav-mobile-action" onClick={handleSettings}>
               Settings
             </button>
-            <button type="button" className="supernav-mobile-action" onClick={onLogout}>
+            <button type="button" className="supernav-mobile-action" onClick={handleLogout}>
               Log out
             </button>
           </div>
