@@ -124,3 +124,8 @@ def login(payload: dict, db: Session = Depends(get_db)):
     client_id=user.client_id,
 )
     return {"access_token": token, "token_type": "bearer"}
+
+@router.post("/logout")
+def logout(_current_user: User = Depends(get_current_user)):
+    # Stateless JWT logout: client should delete token.
+    return {"detail": "Logged out"}
