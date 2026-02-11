@@ -9,6 +9,12 @@ class TemplateBase(BaseModel):
 class TemplateCreate(TemplateBase):
     pass
 
+class TemplateUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    is_global: bool | None = None
+    client_id: int | None = None
+
 class TemplateOut(TemplateBase):
     id: int
     class Config:

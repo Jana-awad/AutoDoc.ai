@@ -41,6 +41,28 @@ def set_document_status(db: Session, doc: Document, status: str) -> Document:
     db.refresh(doc)
     return doc
 
+def update_document(
+    db: Session,
+    doc: Document,
+    template_id: int | None,
+    file_url: str | None,
+    status: str | None,
+) -> Document:
+    if template_id is not None:
+        doc.template_id = template_id
+    if file_url is not None:
+        doc.file_url = file_url
+    if status is not None:
+        doc.status = status
+    db.add(doc)
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+def delete_document(db: Session, doc: Document) -> None:
+    db.delete(doc)
+    db.commit()
+
 def delete_extractions_for_document(db: Session, document_id: int) -> None:
     db.query(Extraction).filter(Extraction.document_id == document_id).delete()
     db.commit()

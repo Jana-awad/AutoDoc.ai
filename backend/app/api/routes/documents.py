@@ -16,11 +16,13 @@ from app.crud.crud_document import (
     set_document_status,
     delete_extractions_for_document,
     create_mock_extractions,
+    update_document,
+    delete_document as delete_document_crud,
 )
 from app.schemas.extraction import ExtractionOut
 from app.crud.crud_extraction import list_extractions_for_document
 from app.schemas.document_process import DocumentProcessOut
-from app.schemas.document import DocumentOut
+from app.schemas.document import DocumentOut, DocumentUpdate
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -28,7 +30,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 @router.post("/upload", response_model=DocumentOut)
 def upload_document(
     template_id: int = Form(...),
-    client_id: int | None = Form(None),   # ✅ add this
+    client_id: int | None = Form(None),  
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -136,3 +138,85 @@ def get_document_extractions(
             raise HTTPException(status_code=403, detail="Forbidden")
 
     return list_extractions_for_document(db, document_id)
+@router.delete("/{document_id}")
+def delete_document_route(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # permission: superadmin any; others only their client
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    delete_extractions_for_document(db, document_id)
+    if doc.file_url and os.path.exists(doc.file_url):
+        os.remove(doc.file_url)
+    delete_document_crud(db, doc)
+    return {"detail": "Document deleted"}
+@router.put("/{document_id}/status")
+def update_document_status(
+    document_id: int,
+    status: str = Form(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # permission: superadmin any; others only their client
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    updated_doc = set_document_status(db, doc, status)
+    return updated_doc
+
+@router.put("/{document_id}", response_model=DocumentOut)
+def update_document_route(
+    document_id: int,
+    payload: DocumentUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    return update_document(db, doc, payload.template_id, payload.file_url, payload.status)
+@router.put("/{document_id}/reprocess", response_model=DocumentProcessOut)
+def reprocess_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # permission: superadmin any; others only their client
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    if doc.template_id is None:
+        raise HTTPException(status_code=400, detail="Document has no template_id")
+
+    try:
+        delete_extractions_for_document(db, doc.id)
+        created = create_mock_extractions(db, doc.id, doc.template_id)
+        doc = set_document_status(db, doc, "done")
+    except Exception:
+        set_document_status(db, doc, "failed")
+        raise
+
+    return {"document": doc, "extractions_created": created}
