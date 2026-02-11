@@ -5,7 +5,7 @@
 import "../../components/variables.css";
 import "../../components/global.css";
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import Enavbar from "../../components/Enavbar";
 import ETemplateList from "../../components/ETemplateList";
 import ETemplateCreateModal from "../../components/ETemplateCreateModal";
 import ETemplateTraining from "../../components/ETemplateTraining";
@@ -86,24 +86,7 @@ function Template() {
 
   return (
     <div className="enterprise-template enterprise-template-page">
-      {/* Enterprise nav - same theme as Edashboard */}
-      <nav className="enterprise-nav">
-        <div className="enterprise-nav-brand">AutoDoc.ai Enterprise</div>
-        <div className="enterprise-nav-links">
-          <Link to="/enterprise" className="enterprise-nav-link">
-            Dashboard
-          </Link>
-          <Link to="/enterprise/template" className="enterprise-nav-link enterprise-nav-link--active">
-            Templates
-          </Link>
-          <Link to="/enterprise/api" className="enterprise-nav-link">
-            API
-          </Link>
-          <Link to="/enterprise/profile" className="enterprise-nav-link">
-            Profile
-          </Link>
-        </div>
-      </nav>
+      <Enavbar />
 
       <main className="enterprise-template-main">
         {/* Page header with Unlimited badge */}
