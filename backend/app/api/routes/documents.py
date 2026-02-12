@@ -19,6 +19,7 @@ from app.crud.crud_document import (
     update_document,
     delete_document as delete_document_crud,
 )
+from app.tasks.process_document_task import process_document_task
 from app.schemas.extraction import ExtractionOut
 from app.crud.crud_extraction import list_extractions_for_document
 from app.schemas.document_process import DocumentProcessOut
@@ -113,15 +114,11 @@ def process_document(
     # set to processing
     set_document_status(db, doc, "processing")
 
-    try:
-        delete_extractions_for_document(db, doc.id)
-        created = create_mock_extractions(db, doc.id, doc.template_id)
-        doc = set_document_status(db, doc, "done")
-    except Exception:
-        set_document_status(db, doc, "failed")
-        raise
+    # Enqueue async task
+    task = process_document_task.delay(doc.id)
 
-    return {"document": doc, "extractions_created": created}
+    # Return immediately with task info
+    return {"document": doc, "task_id": task.id, "status": "processing"}
 @router.get("/{document_id}/extractions", response_model=list[ExtractionOut])
 def get_document_extractions(
     document_id: int,
@@ -211,12 +208,11 @@ def reprocess_document(
     if doc.template_id is None:
         raise HTTPException(status_code=400, detail="Document has no template_id")
 
-    try:
-        delete_extractions_for_document(db, doc.id)
-        created = create_mock_extractions(db, doc.id, doc.template_id)
-        doc = set_document_status(db, doc, "done")
-    except Exception:
-        set_document_status(db, doc, "failed")
-        raise
+    # Set to processing
+    set_document_status(db, doc, "processing")
 
-    return {"document": doc, "extractions_created": created}
+    # Enqueue async task
+    task = process_document_task.delay(doc.id)
+
+    # Return immediately with task info
+    return {"document": doc, "task_id": task.id, "status": "processing"}
