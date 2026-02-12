@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="CHANGE_ME")   # put real value in .env
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    CELERY_BROKER_URL: str = Field(default="redis://localhost:6379/0")  # Memurai/Redis compatible
+    CELERY_RESULT_BACKEND: str = Field(default="redis://localhost:6379/0")  # Memurai/Redis compatible
     class Config:
         env_file = ".env"
         extra = "ignore"
