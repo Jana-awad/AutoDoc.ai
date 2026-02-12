@@ -28,7 +28,7 @@ def create(
             raise HTTPException(status_code=403, detail="Cannot modify this template")
 
     # superadmin can modify anything
-    return create_field(db, payload.template_id, payload.name, payload.label, payload.field_type, payload.required)
+    return create_field(db, payload.template_id, payload.name, payload.label, payload.field_type, payload.required, payload.description)
 
 
 @router.get("/template/{template_id}", response_model=list[FieldOut])
@@ -79,7 +79,7 @@ def update_field_route(field_id: int, payload: FieldCreate, db: Session = Depend
             raise HTTPException(status_code=403, detail="Cannot modify this template")
 
     # superadmin can modify anything
-    return update_field(db, field, payload.name, payload.label, payload.field_type, payload.required)
+    return update_field(db, field, payload.name, payload.label, payload.field_type, payload.required, payload.description)
 @router.delete("/{field_id}")
 def delete_field_route(field_id: int, db: Session = Depends(get_db), user: User = Depends(require_template_management)):
     field = get_field(db, field_id)

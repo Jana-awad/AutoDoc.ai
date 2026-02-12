@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from app.models.field import Field
 
-def create_field(db: Session, template_id: int, name: str, field_type: str | None, required: bool) -> Field:
-    f = Field(template_id=template_id, name=name, field_type=field_type, required=required)
+def create_field(db: Session, template_id: int, name: str, label: str | None, field_type: str | None, required: bool, description: str | None) -> Field:
+    f = Field(template_id=template_id, name=name, label=label, field_type=field_type, required=required, description=description)
     db.add(f)
     db.commit()
     db.refresh(f)
@@ -21,10 +21,12 @@ def delete_field(db: Session, field: Field) -> None:
 
 def get_field(db: Session, field_id: int) -> Field | None:
     return db.query(Field).filter(Field.id == field_id).first()
-def update_field(db: Session, field: Field, name: str, field_type: str | None, required: bool) -> Field:
+def update_field(db: Session, field: Field, name: str, label: str | None, field_type: str | None, required: bool, description: str | None) -> Field:
     field.name = name
+    field.label = label
     field.field_type = field_type
     field.required = required
+    field.description = description
     db.add(field)
     db.commit()
     db.refresh(field)
