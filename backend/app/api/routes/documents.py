@@ -18,6 +18,8 @@ from app.crud.crud_document import (
     create_mock_extractions,
     update_document,
     delete_document as delete_document_crud,
+    update_document,
+    delete_document as delete_document_crud,
 )
 from app.tasks.process_document_task import process_document_task
 from app.schemas.extraction import ExtractionOut
