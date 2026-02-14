@@ -134,7 +134,42 @@ def get_document_extractions(
         if user.client_id is None or doc.client_id != user.client_id:
             raise HTTPException(status_code=403, detail="Forbidden")
 
-    return list_extractions_for_document(db, document_id)
+    extractions = list_extractions_for_document(db, document_id)
+
+    # Attach field name/label for readability
+    for ex in extractions:
+        if ex.field is not None:
+            ex.field_name = ex.field.name
+            ex.field_label = ex.field.label
+
+    return extractions
+
+
+@router.get("/{document_id}/extractions/summary")
+def get_document_extractions_summary(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # permission: superadmin any; others only their client
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    extractions = list_extractions_for_document(db, document_id)
+    summary: dict[str, object | None] = {}
+    for ex in extractions:
+        if ex.field is None:
+            continue
+        key = ex.field.name
+        value = ex.value_json if ex.value_json is not None else ex.value_text
+        summary[key] = value
+
+    return summary
 @router.delete("/{document_id}")
 def delete_document_route(
     document_id: int,

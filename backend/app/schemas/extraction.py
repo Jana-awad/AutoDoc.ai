@@ -17,6 +17,8 @@ class ExtractionOut(BaseModel):
     id: int
     document_id: int
     field_id: int | None = None
+    field_name: str | None = None
+    field_label: str | None = None
     value_text: str | None = None
     value_json: dict | None = None
     confidence: float | None = None

@@ -4,7 +4,6 @@ from app.crud.crud_document import (
     get_document,
     set_document_status,
     delete_extractions_for_document,
-    create_mock_extractions,
 )
 
 
@@ -33,11 +32,53 @@ def process_document_task(document_id: int):
             # Delete old extractions
             delete_extractions_for_document(db, doc.id)
 
-            # TODO: Replace with real OCR + LLM extraction
-            # For now, use mock extractions
-            created = create_mock_extractions(db, doc.id, doc.template_id)
+            # Step 1: OCR (PDF only)
+            file_path = _resolve_file_path(doc.file_url)
+            print(f"[process_document] OCR file_path={file_path}")
+            raw_text = get_text_from_pdf(file_path)
+            print(f"[process_document] OCR done length={len(raw_text)}")
 
-            # Mark as done
+            # Step 2: Cleanup
+            cleaned_text = clean_ocr_text(raw_text)
+            print(f"[process_document] cleanup done length={len(cleaned_text)}")
+
+            # Step 3: Load template + fields
+            context = get_extraction_context(db, document_id)
+            if not context:
+                raise ValueError(f"No extraction context for document {document_id}")
+            print(f"[process_document] context fields={len(context['fields'])}")
+            if len(context["fields"]) == 0:
+                raise ValueError(f"Template {doc.template_id} has no fields")
+
+            # Step 4: LLM extraction
+            print("[process_document] calling LLM")
+            extraction_result = extract_with_llm(cleaned_text, context)
+            print(f"[process_document] LLM done keys={list(extraction_result.keys())}")
+
+            # Step 5: Confidence per field
+            confidence_dict = calculate_confidence(extraction_result, context)
+
+            # Step 6: Save extractions
+            created = 0
+            for field in context["fields"]:
+                field_id = field["id"]
+                field_name = field["name"]
+                value = extraction_result.get(field_name)
+                confidence = confidence_dict.get(field_name, 0.5)
+                value_text = None
+                if value is not None:
+                    value_text = str(value).strip() if isinstance(value, str) else str(value)
+                create_extraction(
+                    db=db,
+                    document_id=doc.id,
+                    field_id=field_id,
+                    value_text=value_text,
+                    value_json=value,
+                    confidence=confidence,
+                )
+                created += 1
+            print(f"[process_document] saved extractions count={created}")
+
             set_document_status(db, doc, "done")
             return {"status": "success", "extractions_created": created}
 
