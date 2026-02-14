@@ -5,6 +5,11 @@ from app.crud.crud_document import (
     set_document_status,
     delete_extractions_for_document,
 )
+from app.crud.crud_extraction import create_extraction
+from app.services.extraction_context import get_extraction_context
+from app.services.llm_extraction import calculate_confidence, extract_with_llm
+from app.services.ocr import get_text_from_pdf
+from app.services.text_cleanup import clean_ocr_text
 
 
 @celery_app.task(name="process_document")
@@ -33,9 +38,8 @@ def process_document_task(document_id: int):
             delete_extractions_for_document(db, doc.id)
 
             # Step 1: OCR (PDF only)
-            file_path = _resolve_file_path(doc.file_url)
-            print(f"[process_document] OCR file_path={file_path}")
-            raw_text = get_text_from_pdf(file_path)
+            print(f"[process_document] OCR file_url={doc.file_url}")
+            raw_text = get_text_from_pdf(doc.file_url)
             print(f"[process_document] OCR done length={len(raw_text)}")
 
             # Step 2: Cleanup

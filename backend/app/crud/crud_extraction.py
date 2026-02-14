@@ -53,20 +53,3 @@ def update_extraction(
 def delete_extraction(db: Session, extraction: Extraction) -> None:
     db.delete(extraction)
     db.commit()
-def create_extraction(db: Session, document_id: int, field_id: int, value: str) -> Extraction:
-    ex = Extraction(document_id=document_id, field_id=field_id, value_text=value)
-    db.add(ex)
-    db.commit()
-    db.refresh(ex)
-    return ex
-def delete_extraction(db: Session, extraction: Extraction) -> None:
-    db.delete(extraction)
-    db.commit()
-def get_extraction(db: Session, extraction_id: int) -> Extraction | None:
-    return db.query(Extraction).filter(Extraction.id == extraction_id).first()
-def update_extraction(db: Session, extraction: Extraction, value: str) -> Extraction:
-    extraction.value_text = value
-    db.add(extraction)
-    db.commit()
-    db.refresh(extraction)
-    return extraction
