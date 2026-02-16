@@ -14,11 +14,12 @@ from app.core.enums import UserRole
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
 @router.post("/register", response_model=UserOut)
 def register(
     payload: UserCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),  
+    current_user: User = Depends(get_current_user),
 ):
     # Email must be unique
     existing = get_by_email(db, payload.email)
@@ -106,6 +107,7 @@ def signup_enterprise(payload: SignupRequest, db: Session = Depends(get_db)):
     _validate_client_type(payload, "enterprise")
     return _signup_with_role(payload, UserRole.ENTERPRISE_ADMIN, db)
 
+
 @router.post("/login")
 def login(payload: dict, db: Session = Depends(get_db)):
     # expects: {"email": "...", "password": "..."}
@@ -119,8 +121,8 @@ def login(payload: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     token = create_access_token(
-    subject=str(user.id),
-    role=user.role,
-    client_id=user.client_id,
-)
+        subject=str(user.id),
+        role=user.role,
+        client_id=user.client_id,
+    )
     return {"access_token": token, "token_type": "bearer"}
