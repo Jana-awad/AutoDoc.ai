@@ -1,0 +1,116 @@
+.super-dashboard {
+  min-height: 100vh;
+  background: var(--gradient-hero);
+}
+
+.super-dashboard-main {
+  padding: calc(var(--navbar-height) + var(--space-16)) var(--container-padding) var(--space-16);
+}
+
+.super-dashboard-container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+.super-dashboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.super-dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.super-dashboard-auto-refresh {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  cursor: pointer;
+}
+
+.super-dashboard-auto-refresh input {
+  accent-color: var(--color-ocean);
+}
+
+.super-dashboard-refresh-btn {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-300);
+  background: var(--glass-bg-light);
+  color: var(--color-navy-deep);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.super-dashboard-refresh-btn:hover:not(:disabled) {
+  background: var(--color-white);
+  border-color: var(--color-ocean);
+}
+
+.super-dashboard-refresh-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.super-dashboard-error {
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  font-size: var(--font-size-sm);
+}
+
+.super-dashboard-section {
+  margin-bottom: var(--space-6);
+}
+
+.super-dashboard-grid {
+  display: grid;
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.super-dashboard-grid--two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.super-dashboard-grid--three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .super-dashboard-grid--three {
+    grid-template-columns: 1fr;
+  }
+
+  .super-dashboard-grid--two {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .super-dashboard-main {
+    padding: calc(var(--navbar-height) + var(--space-8)) var(--container-padding) var(--space-8);
+  }
+
+  .super-dashboard-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .super-dashboard-actions {
+    justify-content: flex-start;
+  }
+}

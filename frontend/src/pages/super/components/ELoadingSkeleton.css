@@ -1,0 +1,93 @@
+.e-skeleton {
+  --skeleton-bg: var(--color-gray-200);
+  --skeleton-shine: rgba(255, 255, 255, 0.6);
+}
+
+.e-skeleton-line {
+  display: block;
+  height: 0.875rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-bg) 0%,
+    var(--color-gray-100) 50%,
+    var(--skeleton-bg) 100%
+  );
+  background-size: 200% 100%;
+  animation: e-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.e-skeleton-line.short {
+  width: 60%;
+}
+
+.e-skeleton-heading {
+  height: 1.25rem;
+  width: 50%;
+  margin-bottom: var(--space-3);
+}
+
+.e-skeleton-title {
+  height: 0.75rem;
+  width: 70%;
+  margin-bottom: var(--space-2);
+}
+
+.e-skeleton-value {
+  height: 1.5rem;
+  width: 40%;
+  margin-bottom: var(--space-2);
+}
+
+.e-skeleton-sub {
+  height: 0.75rem;
+  width: 50%;
+}
+
+@keyframes e-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.e-skeleton-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.e-skeleton-row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.e-skeleton-row .e-skeleton-line {
+  flex: 1;
+}
+
+.e-skeleton-row .e-skeleton-line:last-child {
+  flex: 0 0 20%;
+}
+
+.e-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.e-skeleton-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.e-skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
