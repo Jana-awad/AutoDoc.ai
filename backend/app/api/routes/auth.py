@@ -14,11 +14,12 @@ from app.core.enums import UserRole
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
 @router.post("/register", response_model=UserOut)
 def register(
     payload: UserCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),  
+    current_user: User = Depends(get_current_user),
 ):
     # Email must be unique
     existing = get_by_email(db, payload.email)
@@ -67,7 +68,7 @@ def _signup_with_role(
     try:
         client = create_client(
             db,
-            name=payload.organization_name,
+            name=payload.full_name,
             company_name=payload.company_name or payload.organization_name,
             email=payload.email,
             commit=False,
@@ -107,24 +108,6 @@ def signup_enterprise(payload: SignupRequest, db: Session = Depends(get_db)):
     return _signup_with_role(payload, UserRole.ENTERPRISE_ADMIN, db)
 
 
-@router.post("/signup/super-admin", response_model=UserOut, status_code=201)
-def signup_super_admin(payload: SuperAdminSignupRequest, db: Session = Depends(get_db)):
-    """Create a super_admin user (e.g. for seeding or testing). No client is created."""
-    existing = get_by_email(db, payload.email)
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    user = create_user(
-        db,
-        email=payload.email,
-        password=payload.password,
-        username=payload.full_name,
-        role=UserRole.SUPER_ADMIN,
-        client_id=None,
-        enforce_limits=False,
-    )
-    return user
-
-
 @router.post("/login")
 def login(payload: dict, db: Session = Depends(get_db)):
     # expects: {"email": "...", "password": "..."}
@@ -138,8 +121,8 @@ def login(payload: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     token = create_access_token(
-    subject=str(user.id),
-    role=user.role,
-    client_id=user.client_id,
-)
+        subject=str(user.id),
+        role=user.role,
+        client_id=user.client_id,
+    )
     return {"access_token": token, "token_type": "bearer"}
