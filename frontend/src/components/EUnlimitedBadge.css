@@ -1,0 +1,29 @@
+/* EUnlimitedBadge - Enterprise unlimited indicator */
+.e-unlimited-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: linear-gradient(135deg, rgba(59, 130, 198, 0.15) 0%, rgba(30, 58, 95, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 198, 0.3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+  box-shadow: var(--shadow-sm);
+}
+
+.e-unlimited-badge-icon {
+  font-size: 1.25em;
+  color: var(--color-ocean);
+  line-height: 1;
+}
+
+.e-unlimited-badge--compact {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+}
+
+.e-unlimited-badge--compact .e-unlimited-badge-icon {
+  font-size: 1.1em;
+}

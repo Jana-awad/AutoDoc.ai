@@ -1,0 +1,99 @@
+/* ESupportSection - Enterprise support card */
+.e-support-section {
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+}
+
+.e-support-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.e-support-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+}
+
+.e-support-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.e-support-badge--live {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.e-support-sla {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-5);
+}
+
+.e-support-sla-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.e-support-sla-value {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-navy-deep);
+}
+
+.e-support-account {
+  margin-bottom: var(--space-6);
+}
+
+.e-support-account-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  margin-bottom: var(--space-2);
+}
+
+.e-support-account-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.e-support-account-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+}
+
+.e-support-account-email,
+.e-support-account-phone {
+  font-size: var(--font-size-sm);
+  color: var(--color-ocean);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.e-support-account-email:hover,
+.e-support-account-phone:hover {
+  color: var(--color-navy-deep);
+  text-decoration: underline;
+}
+
+.e-support-btn {
+  width: 100%;
+}
