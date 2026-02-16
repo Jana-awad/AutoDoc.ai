@@ -273,6 +273,18 @@ const SuperNav = ({
     }
   };
 
+  const handleThemeToggle = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const handleProfileBlur = () => {
+    requestAnimationFrame(() => {
+      if (!navRef.current?.contains(document.activeElement)) {
+        setIsProfileOpen(false);
+      }
+    });
+  };
+
   const handleLogout = () => {
     logout();
     if (onLogout) {
@@ -285,18 +297,6 @@ const SuperNav = ({
     if (onSettings) {
       onSettings();
     }
-  };
-
-  const handleThemeToggle = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
-  const handleProfileBlur = () => {
-    requestAnimationFrame(() => {
-      if (!navRef.current?.contains(document.activeElement)) {
-        setIsProfileOpen(false);
-      }
-    });
   };
 
   const initials = userName
