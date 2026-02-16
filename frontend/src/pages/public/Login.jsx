@@ -4,8 +4,7 @@ import Navbar from '../../components/navbar';
 import Footer from '../../components/Footer';
 import './Login.css';
 import { getRoleHome, useAuth } from '../../context/AuthContext';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+import { getApiBaseUrl } from '../../api/config';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -42,8 +41,9 @@ const Login = () => {
       return;
     }
 
+    const apiBase = getApiBaseUrl();
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${apiBase}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -76,7 +76,13 @@ const Login = () => {
 
       navigate(getRoleHome(session.role), { replace: true });
     } catch (err) {
-      setError('Unable to reach the server. Please try again.');
+      const message = err?.message || String(err);
+      const isNetwork = /fetch|network|failed|connection/i.test(message);
+      setError(
+        isNetwork
+          ? `Cannot reach the backend. Make sure it is running on port 8000. (${message})`
+          : `Unable to reach the server. Please try again. (${message})`
+      );
     } finally {
       setLoadingForm(false);
     }

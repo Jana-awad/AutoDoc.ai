@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
 from app.schemas.user import UserCreate, UserOut
-from app.schemas.signup import SignupRequest, SignupResponse
+from app.schemas.signup import SignupRequest, SignupResponse, SuperAdminSignupRequest
 from app.crud.crud_user import get_by_email, create_user, authenticate
 from app.crud.crud_client import create_client
 from app.core.jwt import create_access_token
@@ -105,6 +105,25 @@ def signup_business(payload: SignupRequest, db: Session = Depends(get_db)):
 def signup_enterprise(payload: SignupRequest, db: Session = Depends(get_db)):
     _validate_client_type(payload, "enterprise")
     return _signup_with_role(payload, UserRole.ENTERPRISE_ADMIN, db)
+
+
+@router.post("/signup/super-admin", response_model=UserOut, status_code=201)
+def signup_super_admin(payload: SuperAdminSignupRequest, db: Session = Depends(get_db)):
+    """Create a super_admin user (e.g. for seeding or testing). No client is created."""
+    existing = get_by_email(db, payload.email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = create_user(
+        db,
+        email=payload.email,
+        password=payload.password,
+        username=payload.full_name,
+        role=UserRole.SUPER_ADMIN,
+        client_id=None,
+        enforce_limits=False,
+    )
+    return user
+
 
 @router.post("/login")
 def login(payload: dict, db: Session = Depends(get_db)):
