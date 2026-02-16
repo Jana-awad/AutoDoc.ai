@@ -21,3 +21,10 @@ class SignupResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SuperAdminSignupRequest(BaseModel):
+    """Request body for creating a super_admin user (e.g. seed/test)."""
+    full_name: str = Field(min_length=1, max_length=255)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=72)

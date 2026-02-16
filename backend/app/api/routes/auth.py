@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
 from app.schemas.user import UserCreate, UserOut
-from app.schemas.signup import SignupRequest, SignupResponse
+from app.schemas.signup import SignupRequest, SignupResponse, SuperAdminSignupRequest
 from app.crud.crud_user import get_by_email, create_user, authenticate
 from app.crud.crud_client import create_client
 from app.core.jwt import create_access_token
