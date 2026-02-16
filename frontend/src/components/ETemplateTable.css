@@ -1,0 +1,135 @@
+/* ETemplateTable - Glass-styled table */
+.e-template-table-wrap {
+  background: var(--gradient-card);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+}
+
+.e-template-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.e-template-table th,
+.e-template-table td {
+  padding: var(--space-4) var(--space-5);
+  text-align: left;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.e-template-table thead th {
+  background: rgba(255, 255, 255, 0.6);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+}
+
+.e-template-table-th-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.e-template-table-th-btn:hover {
+  color: var(--color-ocean);
+}
+
+.e-template-table-sort-icon {
+  opacity: 0.4;
+  font-size: 0.75em;
+}
+
+.e-template-table-sort-icon--active {
+  opacity: 1;
+  color: var(--color-ocean);
+}
+
+.e-template-table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+.e-template-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.e-template-table-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-navy-deep);
+}
+
+.e-template-table-id {
+  font-family: ui-monospace, monospace;
+  font-size: var(--font-size-xs);
+  background: var(--color-gray-100);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.e-template-table-status {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.e-template-table-status--active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.e-template-table-status--training {
+  background: rgba(234, 179, 8, 0.2);
+  color: #a16207;
+}
+
+.e-template-table-status--disabled {
+  background: var(--color-gray-200);
+  color: var(--color-gray-600);
+}
+
+.e-template-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.e-template-table-action {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ocean);
+  background: rgba(59, 130, 198, 0.1);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.e-template-table-action:hover {
+  background: rgba(59, 130, 198, 0.2);
+  color: var(--color-navy-deep);
+}
+
+@media (max-width: 900px) {
+  .e-template-table-wrap {
+    overflow-x: auto;
+  }
+
+  .e-template-table th,
+  .e-template-table td {
+    padding: var(--space-3) var(--space-4);
+    min-width: 100px;
+  }
+}
