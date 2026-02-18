@@ -15,7 +15,11 @@ import Api from "./pages/enterprise/api";
 import Profile from "./pages/enterprise/profile";
 import BDashboard from "./pages/business/B_dashboard";
 import BApi from "./pages/business/B_api";
-import BProfile from "./pages/business/B_profile";
+import BProfileLayout from "./pages/business/B_profile";
+import BAccountInfo from "./pages/business/profile/BAccountInfo";
+import BManageUsers from "./pages/business/profile/BManageUsers";
+import BBilling from "./pages/business/profile/BBilling";
+import BSettings from "./pages/business/profile/BSettings";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -46,7 +50,13 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["business_admin"]} />}>
           <Route path="/business" element={<BDashboard />} />
           <Route path="/business/api" element={<BApi />} />
-          <Route path="/business/profile" element={<BProfile />} />
+          <Route path="/business/profile" element={<BProfileLayout />}>
+            <Route index element={<BAccountInfo />} />
+            <Route path="account" element={<BAccountInfo />} />
+            <Route path="users" element={<BManageUsers />} />
+            <Route path="billing" element={<BBilling />} />
+            <Route path="settings" element={<BSettings />} />
+          </Route>
         </Route>
       </Routes>
     </Router>

@@ -36,6 +36,18 @@ const fetchJson = async (path, { token, signal } = {}) => {
 export const fetchEnterpriseProfile = ({ token, signal } = {}) =>
   fetchJson(`${API_BASE}/profile`, { token, signal });
 
+export const fetchEnterpriseAccountInfo = ({ token, signal } = {}) =>
+  fetchJson(`${API_BASE}/profile/account`, { token, signal });
+
+export const fetchEnterpriseUsers = ({ token, signal } = {}) =>
+  fetchJson(`${API_BASE}/profile/users`, { token, signal });
+
+export const fetchEnterpriseSettings = ({ token, signal } = {}) =>
+  fetchJson(`${API_BASE}/profile/settings`, { token, signal });
+
+export const fetchEnterpriseBilling = ({ token, signal } = {}) =>
+  fetchJson(`${API_BASE}/profile/billing`, { token, signal });
+
 export const fetchEnterpriseMetrics = ({ token, signal } = {}) =>
   fetchJson(`${API_BASE}/dashboard/metrics`, { token, signal });
 
