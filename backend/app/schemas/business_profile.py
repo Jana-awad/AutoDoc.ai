@@ -1,6 +1,12 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
+
+
+class ChangePasswordRequest(BaseModel):
+    """Current and new password for secure password change."""
+    current_password: str = Field(min_length=1, description="Current password for verification")
+    new_password: str = Field(min_length=8, max_length=72, description="New password (8-72 chars)")
 
 
 class BusinessAccountUpdate(BaseModel):
