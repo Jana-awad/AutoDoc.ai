@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class ChangePasswordRequest(BaseModel):
@@ -106,3 +106,47 @@ class BusinessBillingHistoryOut(BaseModel):
     amount: float | None = None
     currency: str | None = None
     status: str | None = None
+
+
+class BusinessSettingsOut(BaseModel):
+    """Business workspace/settings returned to frontend (camelCase)."""
+    workspaceName: str | None = None
+    timezone: str | None = None
+    twoFactorEnabled: bool | None = None
+    sessionTimeout: int | str | None = None
+    apiRateLimit: int | str | None = None
+    webhookUrl: str | None = None
+    emailNotifications: bool | None = None
+    activityAlerts: bool | None = None
+    billingAlerts: bool | None = None
+    securityAlerts: bool | None = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+
+class BusinessSettingsUpdate(BaseModel):
+    """Update payload for business settings (all optional)."""
+    workspaceName: str | None = None
+    timezone: str | None = None
+    twoFactorEnabled: bool | None = None
+    sessionTimeout: int | None = Field(None, ge=5, le=120)
+    apiRateLimit: int | None = Field(None, ge=0)
+    webhookUrl: str | None = None
+    emailNotifications: bool | None = None
+    activityAlerts: bool | None = None
+    billingAlerts: bool | None = None
+    securityAlerts: bool | None = None
+
+    @field_validator("sessionTimeout", "apiRateLimit", mode="before")
+    @classmethod
+    def coerce_int(cls, v):
+        if v is None or v == "":
+            return None
+        if isinstance(v, int):
+            return v
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return None

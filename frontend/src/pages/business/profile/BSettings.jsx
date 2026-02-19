@@ -24,20 +24,47 @@ const normalizeNumber = (value) => {
   return Number.isNaN(parsed) ? "" : parsed;
 };
 
+/** Normalize API settings so number fields are "" when empty for controlled inputs */
+const normalizeSettingsFromApi = (data) => {
+  if (!data || typeof data !== "object") return defaultSettings;
+  return {
+    ...defaultSettings,
+    ...data,
+    sessionTimeout: data.sessionTimeout ?? data.session_timeout ?? "",
+    apiRateLimit: data.apiRateLimit ?? data.api_rate_limit ?? "",
+  };
+};
+
+/** Payload for PUT: send numbers where applicable, empty strings as null */
+const settingsToPayload = (s) => ({
+  workspaceName: s.workspaceName || null,
+  timezone: s.timezone || null,
+  twoFactorEnabled: s.twoFactorEnabled,
+  sessionTimeout: normalizeNumber(s.sessionTimeout) === "" ? null : Number(s.sessionTimeout),
+  apiRateLimit: normalizeNumber(s.apiRateLimit) === "" ? null : Number(s.apiRateLimit),
+  webhookUrl: s.webhookUrl || null,
+  emailNotifications: s.emailNotifications,
+  activityAlerts: s.activityAlerts,
+  billingAlerts: s.billingAlerts,
+  securityAlerts: s.securityAlerts,
+});
+
 const BSettings = () => {
   const { token } = useAuth();
   const [settings, setSettings] = useState(defaultSettings);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const fetchSettings = useCallback(
     async (signal) => {
       setLoading(true);
       setError(null);
+      setSuccess(false);
       try {
         const data = await fetchBusinessSettings({ token, signal });
-        setSettings({ ...defaultSettings, ...(data || {}) });
+        setSettings(normalizeSettingsFromApi(data));
       } catch (err) {
         if (err.name !== "AbortError") {
           setError(err.message || "Unable to load settings.");
@@ -67,8 +94,12 @@ const BSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     setError(null);
+    setSuccess(false);
     try {
-      await updateBusinessSettings({ token, data: settings });
+      const payload = settingsToPayload(settings);
+      await updateBusinessSettings({ token, data: payload });
+      setSettings(normalizeSettingsFromApi(payload));
+      setSuccess(true);
     } catch (err) {
       setError(err.message || "Unable to save settings.");
     } finally {
@@ -102,6 +133,11 @@ const BSettings = () => {
       {error && (
         <div className="b-glass-section" style={{ borderColor: "rgba(220,38,38,0.3)", marginBottom: "var(--space-4)" }}>
           <p style={{ color: "#dc2626", fontSize: "var(--font-size-sm)" }}>⚠ {error}</p>
+        </div>
+      )}
+      {success && (
+        <div className="b-glass-section" style={{ borderColor: "rgba(34,197,94,0.3)", marginBottom: "var(--space-4)" }}>
+          <p style={{ color: "var(--success, #16a34a)", fontSize: "var(--font-size-sm)" }}>Settings saved.</p>
         </div>
       )}
 
