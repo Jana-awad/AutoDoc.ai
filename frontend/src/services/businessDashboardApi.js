@@ -85,6 +85,14 @@ export const updateBusinessAccountInfo = ({ token, signal, data } = {}) =>
     body: data,
   });
 
+export const changeBusinessPassword = ({ token, signal, currentPassword, newPassword } = {}) =>
+  requestJson(`${API_BASE}/profile/change-password`, {
+    method: "POST",
+    token,
+    signal,
+    body: { current_password: currentPassword, new_password: newPassword },
+  });
+
 export const createBusinessUser = ({ token, signal, data } = {}) =>
   requestJson(`${API_BASE}/profile/users`, {
     method: "POST",

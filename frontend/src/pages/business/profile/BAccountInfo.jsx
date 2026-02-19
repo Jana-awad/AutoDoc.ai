@@ -3,6 +3,7 @@ import { useAuth } from "../../../context/AuthContext";
 import {
   fetchBusinessAccountInfo,
   updateBusinessAccountInfo,
+  changeBusinessPassword,
 } from "../../../services/businessDashboardApi";
 import { formatNumber, formatText, pickValue } from "../../../utils/profileFormatters";
 
@@ -15,6 +16,14 @@ const BAccountInfo = () => {
   const [editingCompany, setEditingCompany] = useState(false);
   const [savingPersonal, setSavingPersonal] = useState(false);
   const [savingCompany, setSavingCompany] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -99,6 +108,48 @@ const BAccountInfo = () => {
   };
 
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+
+  const handlePasswordChange = (field, value) => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+    setPasswordForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+    if (!currentPassword?.trim()) {
+      setPasswordError("Enter your current password.");
+      return;
+    }
+    if (!newPassword || newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword.length > 72) {
+      setPasswordError("New password must be at most 72 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password and confirmation do not match.");
+      return;
+    }
+    if (currentPassword === newPassword) {
+      setPasswordError("New password must be different from current password.");
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      await changeBusinessPassword({ token, currentPassword, newPassword });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordSuccess(true);
+    } catch (err) {
+      setPasswordError(err.message || "Failed to change password.");
+    } finally {
+      setSavingPassword(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -279,6 +330,70 @@ const BAccountInfo = () => {
             </button>
           </div>
         )}
+      </div>
+
+      <div className="b-glass-section">
+        <h2 style={{ marginBottom: "var(--space-4)" }}>Change Password</h2>
+        <p style={{ fontSize: "var(--font-size-sm)", color: "var(--text-muted)", marginBottom: "var(--space-4)" }}>
+          Update your password. Use at least 8 characters; we recommend a mix of letters, numbers, and symbols.
+        </p>
+        {passwordError && (
+          <p style={{ color: "#dc2626", fontSize: "var(--font-size-sm)", marginBottom: "var(--space-3)" }}>
+            ⚠ {passwordError}
+          </p>
+        )}
+        {passwordSuccess && (
+          <p style={{ color: "var(--success, #16a34a)", fontSize: "var(--font-size-sm)", marginBottom: "var(--space-3)" }}>
+            Password updated successfully.
+          </p>
+        )}
+        <div className="b-form-grid">
+          <div className="b-form-group full-width">
+            <label className="b-form-label">Current password</label>
+            <input
+              type="password"
+              className="b-form-input"
+              placeholder="Enter current password"
+              value={passwordForm.currentPassword}
+              onChange={(e) => handlePasswordChange("currentPassword", e.target.value)}
+              autoComplete="current-password"
+              disabled={savingPassword}
+            />
+          </div>
+          <div className="b-form-group">
+            <label className="b-form-label">New password</label>
+            <input
+              type="password"
+              className="b-form-input"
+              placeholder="At least 8 characters"
+              value={passwordForm.newPassword}
+              onChange={(e) => handlePasswordChange("newPassword", e.target.value)}
+              autoComplete="new-password"
+              disabled={savingPassword}
+            />
+          </div>
+          <div className="b-form-group">
+            <label className="b-form-label">Confirm new password</label>
+            <input
+              type="password"
+              className="b-form-input"
+              placeholder="Re-enter new password"
+              value={passwordForm.confirmPassword}
+              onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
+              autoComplete="new-password"
+              disabled={savingPassword}
+            />
+          </div>
+        </div>
+        <div className="b-form-actions" style={{ marginTop: "var(--space-4)" }}>
+          <button
+            className="btn btn-primary"
+            onClick={handleChangePassword}
+            disabled={savingPassword}
+          >
+            {savingPassword ? "Updating…" : "Change Password"}
+          </button>
+        </div>
       </div>
     </div>
   );

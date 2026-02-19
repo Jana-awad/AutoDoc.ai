@@ -26,9 +26,11 @@ from app.schemas.business_profile import (
     BusinessUserCreate,
     BusinessUserOut,
     BusinessUserUpdate,
+    ChangePasswordRequest,
 )
 from app.core.enums import UserRole
-from app.crud.crud_user import create_user, get_by_email
+from app.core.security import verify_password
+from app.crud.crud_user import create_user, get_by_email, update_user_password
 
 router = APIRouter(prefix="/v1/business/profile", tags=["business-profile"])
 
@@ -211,6 +213,26 @@ def update_account_info(
     db.refresh(client)
 
     return _build_account_info(db, current_user, client)
+
+
+@router.post("/change-password", status_code=204)
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_business_admin),
+):
+    """Verify current password and set a new one. New password must be 8–72 characters."""
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        )
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from current password",
+        )
+    update_user_password(db, current_user, payload.new_password)
 
 
 @router.get("/billing", response_model=BusinessBillingOut)
