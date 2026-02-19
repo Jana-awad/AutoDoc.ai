@@ -2,6 +2,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
 from app.db.base import Base
 
 class Client(Base):
@@ -15,6 +16,7 @@ class Client(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     api_key = Column(String(255), unique=True, nullable=True, index=True)
     billing_history_cleared_at = Column(DateTime(timezone=True), nullable=True)
+    settings = Column(JSONB, nullable=True)
     #billing_contact = Column(String(255), nullable=True)
    # address = Column(String(500), nullable=True)
     #is_active = Column(Boolean, nullable=False, default=True)

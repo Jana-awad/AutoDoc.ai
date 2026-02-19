@@ -23,6 +23,8 @@ from app.schemas.business_profile import (
     BusinessInvoiceOut,
     BusinessPaymentMethod,
     BusinessPlanChange,
+    BusinessSettingsOut,
+    BusinessSettingsUpdate,
     BusinessUserCreate,
     BusinessUserOut,
     BusinessUserUpdate,
@@ -233,6 +235,59 @@ def change_password(
             detail="New password must be different from current password",
         )
     update_user_password(db, current_user, payload.new_password)
+
+
+def _default_settings():
+    return {
+        "workspaceName": "",
+        "timezone": "",
+        "twoFactorEnabled": False,
+        "sessionTimeout": None,
+        "apiRateLimit": None,
+        "webhookUrl": "",
+        "emailNotifications": False,
+        "activityAlerts": False,
+        "billingAlerts": False,
+        "securityAlerts": False,
+    }
+
+
+@router.get("/settings", response_model=BusinessSettingsOut)
+def read_settings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_business_admin),
+):
+    if current_user.client_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
+    client = db.query(Client).filter(Client.id == current_user.client_id).first()
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    raw = client.settings or {}
+    merged = {**_default_settings(), **raw}
+    return BusinessSettingsOut(**merged)
+
+
+@router.put("/settings", response_model=BusinessSettingsOut)
+def update_settings(
+    payload: BusinessSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_business_admin),
+):
+    if current_user.client_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
+    client = db.query(Client).filter(Client.id == current_user.client_id).first()
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    raw = dict(client.settings or _default_settings())
+    update_dict = payload.model_dump(exclude_unset=True)
+    for key, value in update_dict.items():
+        raw[key] = value
+    client.settings = raw
+    db.add(client)
+    db.commit()
+    db.refresh(client)
+    merged = {**_default_settings(), **client.settings}
+    return BusinessSettingsOut(**merged)
 
 
 @router.get("/billing", response_model=BusinessBillingOut)
