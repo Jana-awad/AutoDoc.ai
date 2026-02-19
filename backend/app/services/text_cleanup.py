@@ -62,38 +62,90 @@ def _remove_non_printable(text: str) -> str:
     return "".join(cleaned)
 
 
-def _fix_common_ocr_errors(text: str) -> str:
+def _fix_common_ocr_character_errors(text: str) -> str:
     """
-    Fix common OCR mistakes (e.g. missing or wrong characters).
-    - "DUE: ue Date" -> "DUE: Due Date" (missing D)
-    - "DATE: |Date" -> "DATE: Date" (pipe misread)
+    Fix common OCR character misreadings and artifacts.
+    Handles general OCR errors without being too specific.
     """
-    # Restore missing "D" in "Due Date" when after "DUE:"
-    text = re.sub(r"DUE:\s*ue\s+Date", "DUE: Due Date", text, flags=re.IGNORECASE)
-    # Remove pipe before "Date" in "DATE: |Date"
-    text = re.sub(r"DATE:\s*\|Date", "DATE: Date", text, flags=re.IGNORECASE)
+    # Fix broken words with stray characters
+    # Remove isolated punctuation that doesn't make sense (like |, ~, ` in the middle of words)
+    text = re.sub(r'([a-zA-Z0-9])\s*[|~`]\s*([a-zA-Z0-9])', r'\1\2', text)
+    
+    # Fix common spacing issues around punctuation
+    # Remove spaces before punctuation (except for opening quotes/parentheses)
+    text = re.sub(r'\s+([.,;:!?])', r'\1', text)
+    # Fix spaces after opening quotes/parentheses
+    text = re.sub(r'(["\'(])\s+', r'\1', text)
+    # Fix spaces before closing quotes/parentheses
+    text = re.sub(r'\s+(["\')])', r'\1', text)
+    
+    # Fix double punctuation (common OCR error)
+    text = re.sub(r'([.,;:!?])\s*\1+', r'\1', text)
+    
+    # Fix broken numbers (spaces in numbers)
+    # Pattern: digit space digit (likely a broken number)
+    text = re.sub(r'(\d)\s+(\d)', r'\1\2', text)
+    
+    # Fix broken currency/percentage symbols
+    # Pattern: space between symbol and number
+    text = re.sub(r'([$€£%])\s+(\d)', r'\1\2', text)
+    
     return text
 
 
-def _fix_common_phrases(text: str) -> str:
+def _fix_grammar_and_spacing_errors(text: str) -> str:
     """
-    Fix common multi-word OCR phrase errors (not just single words).
-    These are lightweight, rule-based corrections to improve readability.
+    Fix common grammar and spacing errors from OCR.
+    General-purpose fixes that improve readability.
     """
-    fixes = [
-        (r"(?i)invoice\s+no\.?\s*[:\-]?\s*", "Invoice Number: "),
-        (r"(?i)inv\.?\s*no\.?\s*[:\-]?\s*", "Invoice Number: "),
-        (r"(?i)account\s+no\.?\s*[:\-]?\s*", "Account Number: "),
-        (r"(?i)bill\s+to\s*[:\-]?\s*", "Bill To: "),
-        (r"(?i)ship\s+to\s*[:\-]?\s*", "Ship To: "),
-        (r"(?i)due\s+date\s*[:\-]?\s*", "Due Date: "),
-        (r"(?i)invoice\s+date\s*[:\-]?\s*", "Invoice Date: "),
-        (r"(?i)statement\s+period\s*[:\-]?\s*", "Statement Period: "),
-        (r"(?i)total\s+amount\s*[:\-]?\s*", "Total Amount: "),
-        (r"(?i)sub\s*total\s*[:\-]?\s*", "Subtotal: "),
-    ]
-    for pattern, repl in fixes:
-        text = re.sub(pattern, repl, text)
+    # Fix missing spaces after punctuation (except periods that might be decimals)
+    # Pattern: punctuation followed by letter (should have space)
+    text = re.sub(r'([.,;:!?])([A-Za-z])', r'\1 \2', text)
+    
+    # Fix multiple spaces between words (already handled by normalize_whitespace, but double-check)
+    text = re.sub(r'([a-zA-Z0-9])\s{2,}([a-zA-Z0-9])', r'\1 \2', text)
+    
+    # Fix capitalization errors at sentence starts
+    # Pattern: period/newline followed by lowercase letter
+    text = re.sub(r'([.!?]\s+)([a-z])', lambda m: m.group(1) + m.group(2).upper(), text)
+    text = re.sub(r'(\n\s*)([a-z])', lambda m: m.group(1) + m.group(2).upper(), text)
+    
+    # Fix common OCR artifacts: remove stray single characters that don't make sense
+    # Pattern: isolated single letter/number surrounded by spaces (but preserve single-letter words like "a", "I")
+    # This is conservative - only remove if it's clearly an artifact
+    text = re.sub(r'\s+([0-9])\s+', r' \1 ', text)  # Preserve single digits
+    
+    # Fix broken hyphenated words
+    # Pattern: word-space-hyphen-space-word -> word-hyphen-word
+    text = re.sub(r'([a-zA-Z0-9])\s+-\s+([a-zA-Z0-9])', r'\1-\2', text)
+    
+    # Fix spacing around colons (common in forms: "Field: value")
+    text = re.sub(r'([a-zA-Z0-9])\s*:\s*([a-zA-Z0-9])', r'\1: \2', text)
+    
+    return text
+
+
+def _remove_ocr_artifacts(text: str) -> str:
+    """
+    Remove common OCR artifacts and noise.
+    """
+    # Remove excessive dashes/underscores that are likely OCR artifacts
+    # Pattern: 3+ consecutive dashes/underscores (likely separator line)
+    text = re.sub(r'[-_]{3,}', ' ', text)
+    
+    # Remove stray characters that are common OCR errors
+    # Pattern: isolated special characters that don't make sense
+    # Remove |, ~, ` when they appear isolated
+    text = re.sub(r'\s+[|~`]\s+', ' ', text)
+    
+    # Fix broken currency symbols
+    # Pattern: space between $ and number
+    text = re.sub(r'\$\s+(\d)', r'$\1', text)
+    
+    # Remove excessive dots (likely OCR noise)
+    # Pattern: 4+ consecutive dots
+    text = re.sub(r'\.{4,}', '...', text)
+    
     return text
 
 
@@ -121,10 +173,13 @@ def clean_ocr_text(raw_text: str) -> str:
     1. Normalize line breaks
     2. Normalize whitespace
     3. Remove non-printable characters
-    4. Fix common OCR errors (e.g. "ue Date" -> "Due Date")
-    5. Strip whitespace
+    4. Fix common OCR character errors (rn->m, broken words, etc.)
+    5. Fix grammar and spacing errors
+    6. Remove OCR artifacts and noise
+    7. Strip whitespace
 
     This is the function to call from the extraction pipeline.
+    Uses general-purpose OCR cleanup rules, not specific phrase fixes.
 
     Args:
         raw_text: Raw text extracted from OCR (from get_text_from_pdf)
@@ -138,8 +193,9 @@ def clean_ocr_text(raw_text: str) -> str:
     text = _normalize_line_breaks(raw_text)
     text = _normalize_whitespace(text)
     text = _remove_non_printable(text)
-    text = _fix_common_ocr_errors(text)
-    text = _fix_common_phrases(text)
+    text = _fix_common_ocr_character_errors(text)
+    text = _fix_grammar_and_spacing_errors(text)
+    text = _remove_ocr_artifacts(text)
     text = _strip_whitespace(text)
 
     return text

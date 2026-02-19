@@ -7,7 +7,12 @@ from app.crud.crud_document import (
 )
 from app.crud.crud_extraction import create_extraction
 from app.services.extraction_context import get_extraction_context
-from app.services.llm_extraction import calculate_confidence, extract_with_llm
+from app.services.llm_extraction import (
+    calculate_confidence,
+    extract_with_llm,
+    detect_low_confidence_fields,
+    LOW_CONFIDENCE_THRESHOLD,
+)
 from app.services.ocr import get_text_from_pdf
 from app.services.text_cleanup import clean_ocr_text
 
@@ -59,10 +64,16 @@ def process_document_task(document_id: int):
             extraction_result = extract_with_llm(cleaned_text, context)
             print(f"[process_document] LLM done keys={list(extraction_result.keys())}")
 
-            # Step 5: Confidence per field
+            # Step 5: Calculate confidence per field
             confidence_dict = calculate_confidence(extraction_result, context)
+            print(f"[process_document] confidence calculated for {len(confidence_dict)} fields")
 
-            # Step 6: Save extractions
+            # Step 6: Detect low-confidence fields
+            low_confidence_fields = detect_low_confidence_fields(confidence_dict)
+            if low_confidence_fields:
+                print(f"[process_document] WARNING: Low-confidence fields detected (threshold={LOW_CONFIDENCE_THRESHOLD}): {low_confidence_fields}")
+
+            # Step 7: Save extractions
             created = 0
             for field in context["fields"]:
                 field_id = field["id"]
