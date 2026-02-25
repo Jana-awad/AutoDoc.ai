@@ -3,10 +3,12 @@ OCR utilities to extract text from PDFs using PyMuPDF.
 If the PDF has embedded text, extract it directly; otherwise render pages to images and OCR.
 """
 import os
+from io import BytesIO
 from pathlib import Path
 
 import fitz  # PyMuPDF
 import pytesseract
+from PIL import Image
 
 from app.core.config import settings
 
@@ -63,7 +65,8 @@ def get_text_from_pdf(file_url: str) -> str:
             # 2) Fallback to OCR by rendering page to image
             pix = page.get_pixmap(dpi=300)
             img_bytes = pix.tobytes("png")
-            ocr_text = pytesseract.image_to_string(img_bytes)
+            image = Image.open(BytesIO(img_bytes))
+            ocr_text = pytesseract.image_to_string(image)
             texts.append(ocr_text)
     finally:
         doc.close()
