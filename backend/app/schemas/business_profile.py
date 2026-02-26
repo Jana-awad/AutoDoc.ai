@@ -18,6 +18,14 @@ class BusinessAccountUpdate(BaseModel):
     website: str | None = None
 
 
+class BusinessProfileSummary(BaseModel):
+    """Profile summary for dashboard header (name, plan)."""
+    name: str | None = None
+    fullName: str | None = None
+    email: str | None = None
+    plan: str | None = None
+
+
 class BusinessAccountInfo(BaseModel):
     name: str | None = None
     email: EmailStr | None = None
