@@ -17,6 +17,7 @@ from app.models.user import User
 from app.schemas.business_profile import (
     BusinessAccountInfo,
     BusinessAccountUpdate,
+    BusinessProfileSummary,
     BusinessBillingOut,
     BusinessBillingHistoryOut,
     BusinessBillingPlan,
@@ -160,6 +161,35 @@ def _build_billing_response(db: Session, current_user: User) -> BusinessBillingO
         nextBillingDate=next_billing_date,
         paymentMethod=BusinessPaymentMethod(),
         availablePlans=available_plans,
+    )
+
+
+@router.get("", response_model=BusinessProfileSummary)
+def read_profile_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_business_admin),
+):
+    """Profile summary for dashboard header (name, email, plan)."""
+    if current_user.client_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
+    client = db.query(Client).filter(Client.id == current_user.client_id).first()
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    sub = get_active_subscription(db, client.id)
+    plan_name = sub.plan.name if sub and sub.plan else None
+    if not plan_name:
+        role_plan_map = {
+            UserRole.BUSINESS_ADMIN: "Business Plan",
+            UserRole.ENTERPRISE_ADMIN: "Enterprise Plan",
+            UserRole.SUPER_ADMIN: "Super Admin",
+        }
+        plan_name = role_plan_map.get(current_user.role)
+    display_name = (current_user.username or "").strip() or (current_user.email or "")
+    return BusinessProfileSummary(
+        name=display_name or current_user.email,
+        fullName=display_name or current_user.email,
+        email=current_user.email,
+        plan=plan_name,
     )
 
 
