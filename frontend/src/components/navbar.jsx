@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import './Navbar.css';
 
@@ -12,122 +12,126 @@ const NAV_LINKS = [
 const Navbar = () => {
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const activeLink = NAV_LINKS.find((link) => link.path === location.pathname)?.name ?? 'Home';
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Scroll to top when route changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
 
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') closeMenu();
     };
-  }, [isMobileMenuOpen]);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [closeMenu]);
 
   const handleLinkClick = () => {
-    setIsMobileMenuOpen(false);
-    // Scroll to top when link is clicked
+    closeMenu();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <nav className={`navbar ${isScrolled ? 'navbar-scrolled' : ''}`}>
-      <div className="navbar-container">
-        <div className="navbar-logo">
-          <Link to="/" onClick={handleLinkClick}>
+    <>
+      <header className={`navbar ${isScrolled ? 'navbar--scrolled' : ''}`}>
+        <div className="navbar__bar">
+          <Link to="/" className="navbar__logo" onClick={handleLinkClick}>
             AutoDoc
           </Link>
-        </div>
 
-        <div className="navbar-links">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.name}
-              to={link.path}
-              className={`navbar-link ${activeLink === link.name ? 'active' : ''}`}
-              onClick={handleLinkClick}
-            >
-              {link.name}
-            </Link>
-          ))}
-        </div>
+          {/* Desktop: center links */}
+          <nav className="navbar__nav" aria-label="Main">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.name}
+                to={link.path}
+                className={`navbar__nav-link ${activeLink === link.name ? 'navbar__nav-link--active' : ''}`}
+                onClick={handleLinkClick}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </nav>
 
-        <div className="navbar-actions">
-          <Link
-            to="/login"
-            className="navbar-login-btn"
-            onClick={handleLinkClick}
-          >
-            Login
-          </Link>
-          <Link
-            to="/signup"
-            className="navbar-cta-btn"
-            onClick={handleLinkClick}
-          >
-            Get Started
-          </Link>
-        </div>
-
-        <button
-          className={`navbar-mobile-toggle ${isMobileMenuOpen ? 'active' : ''}`}
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label="Toggle mobile menu"
-          aria-expanded={isMobileMenuOpen}
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      </div>
-
-      <div className={`navbar-mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}>
-        <div className="navbar-mobile-content">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.name}
-              to={link.path}
-              className={`navbar-mobile-link ${activeLink === link.name ? 'active' : ''}`}
-              onClick={handleLinkClick}
-            >
-              {link.name}
-            </Link>
-          ))}
-          <div className="navbar-mobile-actions">
-            <Link
-              to="/login"
-              className="navbar-mobile-login-btn"
-              onClick={handleLinkClick}
-            >
+          {/* Desktop: actions */}
+          <div className="navbar__actions">
+            <Link to="/login" className="navbar__btn navbar__btn--secondary" onClick={handleLinkClick}>
               Login
             </Link>
+            <Link to="/signup" className="navbar__btn navbar__btn--primary" onClick={handleLinkClick}>
+              Get Started
+            </Link>
+          </div>
+
+          {/* Mobile: burger button */}
+          <button
+            type="button"
+            className={`navbar__burger ${menuOpen ? 'navbar__burger--open' : ''}`}
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            aria-controls="navbar-drawer"
+          >
+            <span className="navbar__burger-line" />
+            <span className="navbar__burger-line" />
+            <span className="navbar__burger-line" />
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile: backdrop (tap to close) */}
+      <div
+        id="navbar-backdrop"
+        className={`navbar__backdrop ${menuOpen ? 'navbar__backdrop--open' : ''}`}
+        onClick={closeMenu}
+        onKeyDown={(e) => e.key === 'Enter' && closeMenu()}
+        role="button"
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+
+      {/* Mobile: drawer */}
+      <div
+        id="navbar-drawer"
+        className={`navbar__drawer ${menuOpen ? 'navbar__drawer--open' : ''}`}
+        aria-hidden={!menuOpen}
+      >
+        <div className="navbar__drawer-inner">
+          {NAV_LINKS.map((link) => (
             <Link
-              to="/signup"
-              className="navbar-mobile-cta-btn"
+              key={link.name}
+              to={link.path}
+              className={`navbar__drawer-link ${activeLink === link.name ? 'navbar__drawer-link--active' : ''}`}
               onClick={handleLinkClick}
             >
+              {link.name}
+            </Link>
+          ))}
+          <div className="navbar__drawer-actions">
+            <Link to="/login" className="navbar__drawer-btn navbar__drawer-btn--secondary" onClick={handleLinkClick}>
+              Login
+            </Link>
+            <Link to="/signup" className="navbar__drawer-btn navbar__drawer-btn--primary" onClick={handleLinkClick}>
               Get Started
             </Link>
           </div>
         </div>
       </div>
-    </nav>
+    </>
   );
 };
 
