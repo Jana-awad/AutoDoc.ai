@@ -169,6 +169,30 @@
   padding: var(--space-6);
 }
 
+/* First item (e.g. Dashboard): align left so dropdown doesn’t go off-screen left */
+.supernav-link-wrapper:first-child .supernav-mega {
+  left: 0;
+  transform: translateX(0) translateY(12px);
+}
+
+.supernav-link-wrapper:first-child .supernav-mega.open {
+  transform: translateX(0) translateY(0);
+}
+
+/* Last item: align right so dropdown doesn’t go off-screen right */
+/* Monitoring (and last item): align right so dropdown stays on screen */
+.supernav-link-wrapper:last-child .supernav-mega,
+.supernav-link-wrapper[data-mega="monitoring"] .supernav-mega {
+  left: auto;
+  right: 0;
+  transform: translateX(0) translateY(12px);
+}
+
+.supernav-link-wrapper:last-child .supernav-mega.open,
+.supernav-link-wrapper[data-mega="monitoring"] .supernav-mega.open {
+  transform: translateX(0) translateY(0);
+}
+
 :root[data-theme='dark'] .supernav-mega {
   background: rgba(12, 22, 36, 0.96);
   border-color: rgba(255, 255, 255, 0.1);
