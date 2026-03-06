@@ -12,6 +12,8 @@ class Client(Base):
     name = Column(String(255), nullable=False, index=True)
     company_name = Column(String(255), nullable=True)
     address = Column(String(500), nullable=True)
+    country = Column(String(120), nullable=True)
+    industry = Column(String(120), nullable=True)
     email = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     api_key = Column(String(255), unique=True, nullable=True, index=True)

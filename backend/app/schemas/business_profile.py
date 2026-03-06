@@ -16,6 +16,8 @@ class BusinessAccountUpdate(BaseModel):
     phone: str | None = None
     address: str | None = None
     website: str | None = None
+    country: str | None = None
+    industry: str | None = None
 
 
 class BusinessProfileSummary(BaseModel):
@@ -33,6 +35,8 @@ class BusinessAccountInfo(BaseModel):
     phone: str | None = None
     address: str | None = None
     website: str | None = None
+    country: str | None = None
+    industry: str | None = None
     planName: str | None = None
     planId: int | None = None
     totalUsers: int | None = None

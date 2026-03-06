@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import {
-  fetchBusinessAccountInfo,
-  updateBusinessAccountInfo,
-  changeBusinessPassword,
-} from "../../../services/businessDashboardApi";
+  fetchEnterpriseAccountInfo,
+  updateEnterpriseAccountInfo,
+  changeEnterprisePassword,
+} from "../../../services/enterpriseProfileApi";
 import { formatNumber, formatText, pickValue } from "../../../utils/profileFormatters";
 
-const BAccountInfo = () => {
+const EAccountInfo = () => {
   const { token } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,7 @@ const BAccountInfo = () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchBusinessAccountInfo({ token, signal });
+        const data = await fetchEnterpriseAccountInfo({ token, signal });
         setProfile(data || null);
         setForm({
           name: data?.name || "",
@@ -73,7 +73,7 @@ const BAccountInfo = () => {
     setSavingPersonal(true);
     setError(null);
     try {
-      await updateBusinessAccountInfo({
+      await updateEnterpriseAccountInfo({
         token,
         data: {
           name: form.name,
@@ -97,7 +97,7 @@ const BAccountInfo = () => {
     setSavingCompany(true);
     setError(null);
     try {
-      await updateBusinessAccountInfo({
+      await updateEnterpriseAccountInfo({
         token,
         data: {
           company: form.company,
@@ -147,7 +147,7 @@ const BAccountInfo = () => {
     }
     setSavingPassword(true);
     try {
-      await changeBusinessPassword({ token, currentPassword, newPassword });
+      await changeEnterprisePassword({ token, currentPassword, newPassword });
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setPasswordSuccess(true);
     } catch (err) {
@@ -190,7 +190,7 @@ const BAccountInfo = () => {
     <div>
       <div className="b-page-header">
         <h1>Account Info</h1>
-        <p>Manage your business account, company details, and subscription overview.</p>
+        <p>Manage your enterprise account, company details, and subscription overview.</p>
       </div>
 
       {error && (
@@ -425,4 +425,4 @@ const BAccountInfo = () => {
   );
 };
 
-export default BAccountInfo;
+export default EAccountInfo;

@@ -86,3 +86,23 @@ def require_business_admin(
     if current_user.client_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
     return current_user
+
+
+def require_enterprise_admin(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
+) -> User:
+    role_value = _normalize_role_value(current_user.role)
+    role_claim = None
+    try:
+        payload = decode_token(token)
+        role_claim = _normalize_role_value(payload.get("role", ""))
+    except Exception:
+        role_claim = None
+
+    allowed = {UserRole.ENTERPRISE_ADMIN.value, UserRole.SUPER_ADMIN.value}
+    if role_value not in allowed and role_claim not in allowed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enterprise admin only")
+    if current_user.client_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
+    return current_user

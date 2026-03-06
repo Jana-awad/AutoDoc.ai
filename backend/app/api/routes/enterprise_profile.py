@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
-from app.api.deps import require_business_admin
+from app.api.deps import require_enterprise_admin
 from app.crud.crud_subscription import change_subscription_plan, get_active_subscription
 from app.crud.crud_plan import get_plan, list_active_plans
 from app.crud.crud_payment import create_payment, delete_payments_for_client, list_payments_for_client
@@ -35,7 +35,7 @@ from app.core.enums import UserRole
 from app.core.security import verify_password
 from app.crud.crud_user import create_user, get_by_email, update_user_password
 
-router = APIRouter(prefix="/v1/business/profile", tags=["business-profile"])
+router = APIRouter(prefix="/v1/enterprise/profile", tags=["enterprise-profile"])
 
 
 def _build_account_info(db: Session, user: User, client: Client) -> BusinessAccountInfo:
@@ -80,11 +80,11 @@ def _build_account_info(db: Session, user: User, client: Client) -> BusinessAcco
 def _normalize_role(role: str | None) -> UserRole:
     if not role:
         return UserRole.USER
-    normalized = role.strip().lower()
+    normalized = role.strip().lower().replace(" ", "_")
     mapping = {
-        "admin": UserRole.BUSINESS_ADMIN,
-        "business_admin": UserRole.BUSINESS_ADMIN,
-        "business admin": UserRole.BUSINESS_ADMIN,
+        "admin": UserRole.ENTERPRISE_ADMIN,
+        "enterprise_admin": UserRole.ENTERPRISE_ADMIN,
+        "enterprise admin": UserRole.ENTERPRISE_ADMIN,
         "member": UserRole.USER,
         "user": UserRole.USER,
     }
@@ -96,8 +96,6 @@ def _normalize_role(role: str | None) -> UserRole:
 def _user_to_out(user: User) -> BusinessUserOut:
     role_value = user.role.value if hasattr(user.role, "value") else str(user.role)
     normalized = role_value.strip().lower().replace(" ", "_")
-    if normalized == "business_client_admin":
-        normalized = "business_admin"
     return BusinessUserOut(
         id=user.id,
         name=user.username,
@@ -166,12 +164,26 @@ def _build_billing_response(db: Session, current_user: User) -> BusinessBillingO
     )
 
 
+def _default_settings():
+    return {
+        "workspaceName": "",
+        "timezone": "",
+        "twoFactorEnabled": False,
+        "sessionTimeout": None,
+        "apiRateLimit": None,
+        "webhookUrl": "",
+        "emailNotifications": False,
+        "activityAlerts": False,
+        "billingAlerts": False,
+        "securityAlerts": False,
+    }
+
+
 @router.get("", response_model=BusinessProfileSummary)
 def read_profile_summary(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
-    """Profile summary for dashboard header (name, email, plan)."""
     if current_user.client_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
     client = db.query(Client).filter(Client.id == current_user.client_id).first()
@@ -198,15 +210,13 @@ def read_profile_summary(
 @router.get("/account", response_model=BusinessAccountInfo)
 def read_account_info(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     if current_user.client_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
-
     client = db.query(Client).filter(Client.id == current_user.client_id).first()
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
-
     return _build_account_info(db, current_user, client)
 
 
@@ -214,21 +224,18 @@ def read_account_info(
 def update_account_info(
     payload: BusinessAccountUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     if current_user.client_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
-
     client = db.query(Client).filter(Client.id == current_user.client_id).first()
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
-
     if payload.email and payload.email != current_user.email:
         existing = db.query(User).filter(User.email == payload.email, User.id != current_user.id).first()
         if existing:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
         current_user.email = payload.email
-
     if payload.name is not None:
         current_user.username = payload.name
     if payload.phone is not None:
@@ -243,13 +250,11 @@ def update_account_info(
         client.country = payload.country
     if payload.industry is not None:
         client.industry = payload.industry
-
     db.add(current_user)
     db.add(client)
     db.commit()
     db.refresh(current_user)
     db.refresh(client)
-
     return _build_account_info(db, current_user, client)
 
 
@@ -257,41 +262,19 @@ def update_account_info(
 def change_password(
     payload: ChangePasswordRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
-    """Verify current password and set a new one. New password must be 8–72 characters."""
     if not verify_password(payload.current_password, current_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Current password is incorrect",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
     if payload.current_password == payload.new_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New password must be different from current password",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be different from current password")
     update_user_password(db, current_user, payload.new_password)
-
-
-def _default_settings():
-    return {
-        "workspaceName": "",
-        "timezone": "",
-        "twoFactorEnabled": False,
-        "sessionTimeout": None,
-        "apiRateLimit": None,
-        "webhookUrl": "",
-        "emailNotifications": False,
-        "activityAlerts": False,
-        "billingAlerts": False,
-        "securityAlerts": False,
-    }
 
 
 @router.get("/settings", response_model=BusinessSettingsOut)
 def read_settings(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     if current_user.client_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
@@ -307,7 +290,7 @@ def read_settings(
 def update_settings(
     payload: BusinessSettingsUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     if current_user.client_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
@@ -329,7 +312,7 @@ def update_settings(
 @router.get("/billing", response_model=BusinessBillingOut)
 def read_billing(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     return _build_billing_response(db, current_user)
 
@@ -337,7 +320,7 @@ def read_billing(
 @router.get("/billing/invoices", response_model=list[BusinessInvoiceOut])
 def list_billing_invoices(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     payments = list_payments_for_client(db, current_user.client_id)
     invoices = []
@@ -361,7 +344,7 @@ def list_billing_invoices(
 @router.get("/billing/history", response_model=list[BusinessBillingHistoryOut])
 def list_billing_history(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     if current_user.client_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
@@ -370,16 +353,13 @@ def list_billing_history(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
     if client.billing_history_cleared_at is not None:
         return []
-
     entries = []
-
     subscriptions = (
         db.query(Subscription)
         .filter(Subscription.client_id == current_user.client_id)
         .order_by(Subscription.id.desc())
         .all()
     )
-
     for sub in subscriptions:
         plan = sub.plan
         plan_name = plan.name if plan else "Plan"
@@ -408,7 +388,6 @@ def list_billing_history(
                     status=sub.status,
                 )
             )
-
     payments = list_payments_for_client(db, current_user.client_id)
     for payment in payments:
         plan = payment.subscription.plan if payment.subscription else None
@@ -425,7 +404,6 @@ def list_billing_history(
                 status=payment.status,
             )
         )
-
     entries.sort(
         key=lambda item: item.date or datetime.min.replace(tzinfo=timezone.utc),
         reverse=True,
@@ -436,7 +414,7 @@ def list_billing_history(
 @router.delete("/billing/history", status_code=204)
 def clear_billing_history(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     if current_user.client_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
@@ -453,21 +431,20 @@ def clear_billing_history(
 def change_billing_plan(
     payload: BusinessPlanChange,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     plan = get_plan(db, payload.planId)
     if not plan or not plan.is_active:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid plan")
-
     sub = change_subscription_plan(db, current_user.client_id, payload.planId)
     create_payment(db, client_id=current_user.client_id, subscription_id=sub.id, status="paid")
     return _build_billing_response(db, current_user)
 
 
 @router.get("/users", response_model=list[BusinessUserOut])
-def list_business_users(
+def list_enterprise_users(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     users = (
         db.query(User)
@@ -479,14 +456,13 @@ def list_business_users(
 
 
 @router.post("/users", response_model=BusinessUserOut, status_code=201)
-def add_business_user(
+def add_enterprise_user(
     payload: BusinessUserCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     if get_by_email(db, payload.email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
-
     role = _normalize_role(payload.role)
     password = payload.password or secrets.token_urlsafe(12)
     user = create_user(
@@ -497,16 +473,15 @@ def add_business_user(
         role=role,
         client_id=current_user.client_id,
     )
-
     return _user_to_out(user)
 
 
 @router.patch("/users/{user_id}", response_model=BusinessUserOut)
-def update_business_user(
+def update_enterprise_user(
     user_id: int,
     payload: BusinessUserUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     user = (
         db.query(User)
@@ -515,16 +490,13 @@ def update_business_user(
     )
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
     if payload.role is not None:
         user.role = _normalize_role(payload.role)
-
     if payload.status is not None:
         normalized = payload.status.strip().lower()
         if normalized not in {"active", "inactive"}:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status")
         user.is_active = normalized == "active"
-
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -532,14 +504,13 @@ def update_business_user(
 
 
 @router.delete("/users/{user_id}", status_code=204)
-def delete_business_user(
+def delete_enterprise_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_business_admin),
+    current_user: User = Depends(require_enterprise_admin),
 ):
     if user_id == current_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot remove yourself")
-
     user = (
         db.query(User)
         .filter(User.id == user_id, User.client_id == current_user.client_id)
@@ -547,6 +518,5 @@ def delete_business_user(
     )
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
     db.delete(user)
     db.commit()
