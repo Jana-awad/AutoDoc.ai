@@ -9,6 +9,9 @@ import Sdashboard from "./pages/super/Sdashboard";
 import ClientsPlans from "./pages/super/clients_plans";
 import Monitoring from "./pages/super/monitoring";
 import TemplatesAi from "./pages/super/templates_ai";
+import TemplateBuilder from "./pages/super/TemplateBuilder";
+import AiOverview from "./pages/super/AiOverview";
+import TemplatesManager from "./pages/super/TemplatesManager";
 import EDashboard from "./pages/enterprise/Edashboard";
 import Template from "./pages/enterprise/template";
 import Api from "./pages/enterprise/api";
@@ -37,6 +40,9 @@ function App() {
           <Route path="/super" element={<Sdashboard />} />
           <Route path="/super/clients-plans" element={<ClientsPlans />} />
           <Route path="/super/templates-ai" element={<TemplatesAi />} />
+          <Route path="/super/templates-ai/builder" element={<TemplateBuilder />} />
+          <Route path="/super/templates-ai/ai-overview" element={<AiOverview />} />
+          <Route path="/super/templates-ai/manager" element={<TemplatesManager />} />
           <Route path="/super/monitoring" element={<Monitoring />} />
         </Route>
 

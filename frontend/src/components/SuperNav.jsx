@@ -69,6 +69,12 @@ const MonitorIcon = () => (
   </svg>
 );
 
+const DashboardIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" />
+  </svg>
+);
+
 const SearchIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="11" cy="11" r="7" />
@@ -98,32 +104,29 @@ const LogoutIcon = () => (
 );
 
 const defaultMegaMenus = {
-  templates: {
-    title: 'Template & AI',
-    description: 'Design, train, and deploy extraction workflows.',
+  dashboard: {
+    title: 'Dashboard',
+    description: 'Super admin home and key metrics.',
     columns: [
       {
-        heading: 'Template Studio',
+        heading: 'Pages',
         items: [
-          { title: 'Template Builder', description: 'Design structured templates in minutes.', path: '/super/templates-ai', icon: <TemplateIcon /> },
-          { title: 'Field Library', description: 'Reusable fields with validation rules.', path: '/super/templates-ai', icon: <PipelineIcon /> },
-          { title: 'Version Control', description: 'Track template changes with confidence.', path: '/super/templates-ai', icon: <ShieldIcon /> },
+          { title: 'Dashboard', description: 'Overview and key metrics.', path: '/super', icon: <DashboardIcon /> },
         ],
       },
+    ],
+  },
+  templates: {
+    title: 'Template & AI',
+    description: 'Design, manage, and deploy extraction templates.',
+    columns: [
       {
-        heading: 'AI Pipeline',
+        heading: 'Pages',
         items: [
-          { title: 'Model Tuning', description: 'Fine-tune extraction accuracy.', path: '/super/templates-ai', icon: <SparkIcon /> },
-          { title: 'Data Normalization', description: 'Normalize outputs across sources.', path: '/super/templates-ai', icon: <PipelineIcon /> },
-          { title: 'Confidence Scoring', description: 'Review low-confidence fields.', path: '/super/templates-ai', icon: <ShieldIcon /> },
-        ],
-      },
-      {
-        heading: 'Automation',
-        items: [
-          { title: 'Workflow Rules', description: 'Route documents automatically.', path: '/super/templates-ai', icon: <PipelineIcon /> },
-          { title: 'Webhooks', description: 'Stream results to your systems.', path: '/super/templates-ai', icon: <TemplateIcon /> },
-          { title: 'Quality Gates', description: 'Enforce validation checkpoints.', path: '/super/templates-ai', icon: <ShieldIcon /> },
+          { title: 'Templates overview', description: 'Overview of templates and AI extraction.', path: '/super/templates-ai', icon: <TemplateIcon /> },
+          { title: 'Template builder', description: 'Create and configure AI extraction templates.', path: '/super/templates-ai/builder', icon: <PipelineIcon /> },
+          { title: 'AI overview', description: 'AI pipeline and extraction insights.', path: '/super/templates-ai/ai-overview', icon: <SparkIcon /> },
+          { title: 'Templates manager', description: 'Manage and organize your templates.', path: '/super/templates-ai/manager', icon: <ShieldIcon /> },
         ],
       },
     ],
@@ -158,6 +161,18 @@ const defaultMegaMenus = {
       },
     ],
   },
+  monitoring: {
+    title: 'Monitoring',
+    description: 'System health and observability.',
+    columns: [
+      {
+        heading: 'Pages',
+        items: [
+          { title: 'Monitoring', description: 'System health, logs, and observability.', path: '/super/monitoring', icon: <MonitorIcon /> },
+        ],
+      },
+    ],
+  },
 };
 
 const SuperNav = ({
@@ -187,10 +202,10 @@ const SuperNav = ({
 
   const navLinks = useMemo(
     () => [
-      { name: 'Dashboard', path: '/super' },
+      { name: 'Dashboard', path: '/super', mega: 'dashboard' },
       { name: 'Template & AI', path: '/super/templates-ai', mega: 'templates' },
       { name: 'Clients & Plans', path: '/super/clients-plans', mega: 'clients' },
-      { name: 'Monitoring', path: '/super/monitoring' },
+      { name: 'Monitoring', path: '/super/monitoring', mega: 'monitoring' },
     ],
     []
   );
