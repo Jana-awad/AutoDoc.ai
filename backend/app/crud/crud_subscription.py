@@ -8,7 +8,7 @@ from app.models.plan import Plan
 from app.crud.crud_plan import list_active_plans
 
 
-ALWAYS_ACTIVE_EMAIL = "ch@seniorb.com"
+ALWAYS_ACTIVE_EMAIL = "ch@seniore.com"
 
 
 def _is_always_active_client(db: Session, client_id: int) -> bool:
@@ -89,6 +89,7 @@ def _resolve_business_plan(db: Session) -> Plan | None:
 
 
 def _ensure_always_active_subscription(db: Session, client_id: int) -> Subscription | None:
+    """Keep subscription always active for the always-active email (e.g. ch@seniore.com enterprise account)."""
     now = datetime.now(timezone.utc)
     sub = (
         db.query(Subscription)
@@ -105,10 +106,11 @@ def _ensure_always_active_subscription(db: Session, client_id: int) -> Subscript
             db.refresh(sub)
         return sub
 
-    plan = _resolve_business_plan(db)
+    # No subscription yet: create one on Enterprise plan for always-active account
+    _business, enterprise = _ensure_default_plans(db)
+    plan = enterprise
     if not plan:
         return None
-
     return create_subscription(db, client_id, plan.id)
 
 

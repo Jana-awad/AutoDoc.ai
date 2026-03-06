@@ -198,7 +198,6 @@ const SuperNav = ({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
-  const [isMac, setIsMac] = useState(false);
 
   const navLinks = useMemo(
     () => [
@@ -212,11 +211,6 @@ const SuperNav = ({
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const prefersMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
-    setIsMac(prefersMac);
   }, []);
 
   useEffect(() => {
@@ -412,10 +406,6 @@ const SuperNav = ({
               onBlur={() => setIsSearchFocused(false)}
               aria-label="Search"
             />
-            <span className="supernav-search-hint" aria-hidden="true">
-              <kbd>{isMac ? '⌘' : 'Ctrl'}</kbd>
-              <kbd>K</kbd>
-            </span>
           </form>
 
           <button className="supernav-theme-toggle" type="button" onClick={handleThemeToggle} aria-label="Toggle theme">
