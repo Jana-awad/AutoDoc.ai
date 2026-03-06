@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
@@ -11,6 +11,8 @@ import {
   ChevronUp,
   ChevronDown,
   Info,
+  Upload,
+  X,
 } from "lucide-react";
 import "../../components/variables.css";
 import SuperNav from "../../components/SuperNav";
@@ -21,13 +23,6 @@ const DATA_TYPES = [
   { value: "number", label: "Number" },
   { value: "date", label: "Date" },
   { value: "boolean", label: "Boolean" },
-];
-
-const DOCUMENT_POSITIONS = [
-  { value: "Top", label: "Top" },
-  { value: "Middle", label: "Middle" },
-  { value: "Bottom", label: "Bottom" },
-  { value: "Custom", label: "Custom" },
 ];
 
 const LANGUAGES = [
@@ -203,17 +198,13 @@ function FieldCard({ field, index, onUpdate, onRemove, onMove, canRemove, totalF
         </div>
         <div className="tpl-ai-field-group">
           <label>Document position</label>
-          <select
+          <input
+            type="text"
             value={field.document_position}
             onChange={(e) => update("document_position", e.target.value)}
-            className="tpl-ai-select"
-          >
-            {DOCUMENT_POSITIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            className="tpl-ai-input"
+            placeholder="e.g. Top, Middle, Bottom"
+          />
         </div>
         <div className="tpl-ai-field-group tpl-ai-field-group--full">
           <label>Extraction hint</label>
@@ -264,6 +255,13 @@ function FieldCard({ field, index, onUpdate, onRemove, onMove, canRemove, totalF
 
 function TemplateBuilder() {
   const [state, setState] = useState(getInitialState);
+  const [templatePdfFile, setTemplatePdfFile] = useState(/** @type {File | null} */ (null));
+  const pdfInputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
+
+  const clearPdfFile = useCallback(() => {
+    setTemplatePdfFile(null);
+    if (pdfInputRef.current) pdfInputRef.current.value = "";
+  }, []);
 
   const updateTemplate = useCallback((key, value) => {
     setState((prev) => ({ ...prev, [key]: value }));
@@ -443,6 +441,45 @@ function TemplateBuilder() {
                   </button>
                   <span className="tpl-ai-toggle-label">
                     {state.status === "active" ? "Active" : "Inactive"}
+                  </span>
+                </div>
+                <div className="tpl-ai-group tpl-ai-group--full">
+                  <label htmlFor="tpl-pdf">Template PDF</label>
+                  <div className="tpl-ai-file-upload">
+                    <input
+                      ref={pdfInputRef}
+                      id="tpl-pdf"
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      className="tpl-ai-file-input"
+                      onChange={(e) => setTemplatePdfFile(e.target.files?.[0] ?? null)}
+                      aria-label="Upload template PDF"
+                    />
+                    <label htmlFor="tpl-pdf" className="tpl-ai-file-zone">
+                      <Upload size={20} className="tpl-ai-file-icon" />
+                      <span className="tpl-ai-file-text">
+                        {templatePdfFile
+                          ? templatePdfFile.name
+                          : "Choose a PDF from your device"}
+                      </span>
+                      {templatePdfFile && (
+                        <button
+                          type="button"
+                          className="tpl-ai-file-clear"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            clearPdfFile();
+                          }}
+                          aria-label="Remove PDF"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </label>
+                  </div>
+                  <span className="tpl-ai-helper">
+                    Upload a sample PDF to use as the template reference. Only PDF files are accepted.
                   </span>
                 </div>
               </div>

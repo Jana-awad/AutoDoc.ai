@@ -273,6 +273,76 @@
   color: var(--color-navy-deep);
 }
 
+/* ----- Template PDF upload ----- */
+.tpl-ai-file-upload {
+  position: relative;
+  width: 100%;
+}
+
+.tpl-ai-file-input {
+  position: absolute;
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.tpl-ai-file-zone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--font-size-base);
+  font-family: var(--font-body);
+  color: var(--color-navy-deep);
+  background: var(--color-white);
+  border: 1px dashed var(--color-gray-300);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.tpl-ai-file-zone:hover {
+  border-color: var(--color-ocean);
+  background: rgba(59, 130, 198, 0.04);
+}
+
+.tpl-ai-file-icon {
+  flex-shrink: 0;
+  color: var(--color-ocean);
+}
+
+.tpl-ai-file-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-gray-600);
+}
+
+.tpl-ai-file-zone:hover .tpl-ai-file-text {
+  color: var(--color-navy-deep);
+}
+
+.tpl-ai-file-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  border: none;
+  background: transparent;
+  color: var(--color-gray-500);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.tpl-ai-file-clear:hover {
+  color: var(--color-navy-deep);
+  background: rgba(0, 0, 0, 0.06);
+}
+
 /* ----- Buttons ----- */
 .tpl-ai-btn {
   display: inline-flex;
