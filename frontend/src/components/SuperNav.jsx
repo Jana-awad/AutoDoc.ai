@@ -343,6 +343,7 @@ const SuperNav = ({
                 <div
                   key={link.name}
                   className="supernav-link-wrapper"
+                  data-mega={link.mega || undefined}
                   onMouseEnter={() => hasMega && setOpenMega(link.mega)}
                   onMouseLeave={() => hasMega && setOpenMega(null)}
                   onFocus={() => hasMega && setOpenMega(link.mega)}
