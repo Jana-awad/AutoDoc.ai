@@ -199,11 +199,14 @@ def read_profile_summary(
         }
         plan_name = role_plan_map.get(current_user.role)
     display_name = (current_user.username or "").strip() or (current_user.email or "")
+    org = client.company_name or client.name or ""
     return BusinessProfileSummary(
         name=display_name or current_user.email,
         fullName=display_name or current_user.email,
         email=current_user.email,
         plan=plan_name,
+        organization=org,
+        workspace=org,
     )
 
 

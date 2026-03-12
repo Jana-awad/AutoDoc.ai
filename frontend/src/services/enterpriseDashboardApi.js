@@ -1,4 +1,6 @@
-const API_BASE = "/api/v1/enterprise";
+import { getApiBaseUrl } from "../api/config";
+
+const API_BASE = `${getApiBaseUrl()}/v1/enterprise`;
 
 const buildHeaders = (token) => {
   const headers = { "Content-Type": "application/json" };
@@ -23,8 +25,14 @@ const fetchJson = async (path, { token, signal } = {}) => {
   });
 
   if (!response.ok) {
-    const error = new Error(`Request failed: ${response.status}`);
+    const payload = await response.json().catch(() => null);
+    const detail = payload?.detail ?? payload?.message ?? payload?.error;
+    const message = Array.isArray(detail)
+      ? detail.map((item) => item?.msg || item).join(", ")
+      : detail;
+    const error = new Error(message || `Request failed: ${response.status}`);
     error.status = response.status;
+    error.payload = payload;
     throw error;
   }
 

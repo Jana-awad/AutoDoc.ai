@@ -11,7 +11,6 @@ function AiOverview() {
         userEmail="admin@autodoc.ai"
         onLogout={() => {}}
         onSettings={() => {}}
-        onSearch={() => {}}
       />
       <main className="super-ai-overview-main">
         <div className="super-ai-overview-container">

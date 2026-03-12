@@ -75,13 +75,6 @@ const DashboardIcon = () => (
   </svg>
 );
 
-const SearchIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="11" cy="11" r="7" />
-    <path d="M21 21l-4.3-4.3" />
-  </svg>
-);
-
 const SunIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="12" r="5" />
@@ -161,32 +154,18 @@ const defaultMegaMenus = {
       },
     ],
   },
-  monitoring: {
-    title: 'Monitoring',
-    description: 'System health and observability.',
-    columns: [
-      {
-        heading: 'Pages',
-        items: [
-          { title: 'Monitoring', description: 'System health, logs, and observability.', path: '/super/monitoring', icon: <MonitorIcon /> },
-        ],
-      },
-    ],
-  },
 };
 
 const SuperNav = ({
   userName = 'User',
   userEmail = 'user@autodoc.ai',
   onLogout,
-  onSearch,
   onSettings,
 }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const navRef = useRef(null);
-  const searchRef = useRef(null);
   const [mounted, setMounted] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [isSolid, setIsSolid] = useState(false);
@@ -194,8 +173,6 @@ const SuperNav = ({
   const [openMega, setOpenMega] = useState(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState(null);
-  const [searchValue, setSearchValue] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
@@ -204,7 +181,6 @@ const SuperNav = ({
       { name: 'Dashboard', path: '/super', mega: 'dashboard' },
       { name: 'Template & AI', path: '/super/templates-ai', mega: 'templates' },
       { name: 'Clients & Plans', path: '/super/clients-plans', mega: 'clients' },
-      { name: 'Monitoring', path: '/super/monitoring', mega: 'monitoring' },
     ],
     []
   );
@@ -237,11 +213,6 @@ const SuperNav = ({
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        setIsSearchFocused(true);
-        searchRef.current?.focus();
-      }
       if (event.key === 'Escape') {
         setOpenMega(null);
         setIsMobileOpen(false);
@@ -273,13 +244,6 @@ const SuperNav = ({
       return location.pathname === '/super';
     }
     return location.pathname.startsWith(path);
-  };
-
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
-    if (onSearch) {
-      onSearch(searchValue);
-    }
   };
 
   const handleThemeToggle = () => {
@@ -395,20 +359,6 @@ const SuperNav = ({
         </div>
 
         <div className="supernav-right">
-          <form className={`supernav-search ${isSearchFocused ? 'focused' : ''}`} onSubmit={handleSearchSubmit}>
-            <SearchIcon />
-            <input
-              ref={searchRef}
-              type="search"
-              placeholder="Search"
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              aria-label="Search"
-            />
-          </form>
-
           <button className="supernav-theme-toggle" type="button" onClick={handleThemeToggle} aria-label="Toggle theme">
             <span className="theme-icon sun"><SunIcon /></span>
             <span className="theme-icon moon"><MoonIcon /></span>

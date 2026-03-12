@@ -26,6 +26,8 @@ class BusinessProfileSummary(BaseModel):
     fullName: str | None = None
     email: str | None = None
     plan: str | None = None
+    organization: str | None = None
+    workspace: str | None = None
 
 
 class BusinessAccountInfo(BaseModel):

@@ -204,7 +204,6 @@ function TemplatesAi() {
         userEmail="admin@autodoc.ai"
         onLogout={() => {}}
         onSettings={() => {}}
-        onSearch={() => {}}
       />
       <main className="super-templates-ai-main">
         <div className="super-templates-ai-container">
