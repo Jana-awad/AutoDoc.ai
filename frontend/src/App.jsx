@@ -7,7 +7,6 @@ import Contact from "./pages/public/Contact";
 import Login from "./pages/public/Login";
 import Sdashboard from "./pages/super/Sdashboard";
 import ClientsPlans from "./pages/super/clients_plans";
-import Monitoring from "./pages/super/monitoring";
 import TemplatesAi from "./pages/super/templates_ai";
 import TemplateBuilder from "./pages/super/TemplateBuilder";
 import AiOverview from "./pages/super/AiOverview";
@@ -47,7 +46,6 @@ function App() {
           <Route path="/super/templates-ai/builder" element={<TemplateBuilder />} />
           <Route path="/super/templates-ai/ai-overview" element={<AiOverview />} />
           <Route path="/super/templates-ai/manager" element={<TemplatesManager />} />
-          <Route path="/super/monitoring" element={<Monitoring />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["enterprise_admin"]} />}>

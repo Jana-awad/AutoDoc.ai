@@ -180,16 +180,13 @@
 }
 
 /* Last item: align right so dropdown doesn’t go off-screen right */
-/* Monitoring (and last item): align right so dropdown stays on screen */
-.supernav-link-wrapper:last-child .supernav-mega,
-.supernav-link-wrapper[data-mega="monitoring"] .supernav-mega {
+.supernav-link-wrapper:last-child .supernav-mega {
   left: auto;
   right: 0;
   transform: translateX(0) translateY(12px);
 }
 
-.supernav-link-wrapper:last-child .supernav-mega.open,
-.supernav-link-wrapper[data-mega="monitoring"] .supernav-mega.open {
+.supernav-link-wrapper:last-child .supernav-mega.open {
   transform: translateX(0) translateY(0);
 }
 
@@ -298,60 +295,6 @@
 
 :root[data-theme='dark'] .supernav-mega-desc {
   color: var(--color-gray-300);
-}
-
-.supernav-search {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid var(--glass-border);
-  transition: width var(--transition-base), box-shadow var(--transition-fast);
-}
-
-:root[data-theme='dark'] .supernav-search {
-  background: rgba(12, 22, 36, 0.7);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.supernav-search svg {
-  width: 16px;
-  height: 16px;
-  stroke: var(--color-gray-500);
-  fill: none;
-  stroke-width: 2;
-}
-
-.supernav-search input {
-  width: 140px;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: var(--font-size-sm);
-  color: var(--color-navy-deep);
-  transition: width var(--transition-base);
-}
-
-.supernav-search.focused input,
-.supernav-search input:focus {
-  width: 220px;
-}
-
-.supernav-search-hint {
-  display: inline-flex;
-  gap: var(--space-1);
-}
-
-.supernav-search-hint kbd {
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-gray-200);
-  color: var(--color-gray-500);
-  background: var(--color-white);
 }
 
 .supernav-theme-toggle,
@@ -683,7 +626,6 @@
 
 @media (max-width: 1024px) {
   .supernav-links,
-  .supernav-search,
   .supernav-theme-toggle,
   .supernav-logout,
   .supernav-profile {

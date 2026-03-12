@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.api.routes import auth, users, clients, fields, templates, documents
-from app.api.routes import business_profile, business_dashboard, enterprise_profile
+from app.api.routes import business_profile, business_dashboard, enterprise_profile, enterprise_dashboard
 from app.api.routes import plans, subscriptions, payments
 
 api_router = APIRouter()
@@ -17,3 +17,4 @@ api_router.include_router(payments.router)
 api_router.include_router(business_profile.router)
 api_router.include_router(business_dashboard.router)
 api_router.include_router(enterprise_profile.router)
+api_router.include_router(enterprise_dashboard.router)

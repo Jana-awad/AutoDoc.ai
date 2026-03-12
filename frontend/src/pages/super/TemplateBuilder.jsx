@@ -338,7 +338,6 @@ function TemplateBuilder() {
         userEmail="admin@autodoc.ai"
         onLogout={() => {}}
         onSettings={() => {}}
-        onSearch={() => {}}
       />
       <main className="super-template-builder-main">
         <div className="tpl-ai-container">

@@ -85,7 +85,11 @@ function ESystemHealth() {
           <div className="edashboard-health-item">
             <span className="edashboard-health-label">Avg Processing Time</span>
             <span className="edashboard-health-value">
-              {health.avgProcessingTime ?? "—"} ms
+              {health.avgProcessingTime != null
+                ? typeof health.avgProcessingTime === "string"
+                  ? health.avgProcessingTime
+                  : `${health.avgProcessingTime} ms`
+                : "—"}
             </span>
           </div>
           <div className="edashboard-health-item">

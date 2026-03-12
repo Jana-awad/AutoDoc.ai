@@ -11,7 +11,6 @@ function TemplatesManager() {
         userEmail="admin@autodoc.ai"
         onLogout={() => {}}
         onSettings={() => {}}
-        onSearch={() => {}}
       />
       <main className="super-templates-manager-main">
         <div className="super-templates-manager-container">

@@ -198,7 +198,7 @@ function ClientsPlans() {
 
   const handleOpenLogs = useCallback(() => {
     setDrawerClientId(null);
-    navigate("/super/monitoring");
+    navigate("/super");
   }, [navigate]);
 
   const handleDeleteClient = useCallback(async () => {
@@ -217,7 +217,6 @@ function ClientsPlans() {
         userEmail="admin@autodoc.ai"
         onLogout={() => {}}
         onSettings={() => {}}
-        onSearch={() => {}}
       />
       <main className="super-clients-plans-main">
         <div className="super-clients-plans-container">
