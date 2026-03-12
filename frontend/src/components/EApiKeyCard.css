@@ -1,0 +1,133 @@
+.e-api-key-card {
+  padding: var(--space-5) var(--space-6);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-base);
+}
+
+.e-api-key-card:hover {
+  box-shadow: var(--glass-shadow-hover);
+}
+
+.e-api-key-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.e-api-key-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.e-api-key-card__env {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+}
+
+.e-api-key-card__env--production {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.e-api-key-card__env--staging {
+  background: rgba(234, 179, 8, 0.2);
+  color: #ca8a04;
+}
+
+.e-api-key-card__env--development {
+  background: rgba(59, 130, 198, 0.15);
+  color: var(--color-ocean);
+}
+
+.e-api-key-card__name {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+
+.e-api-key-card__key-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.e-api-key-card__key {
+  font-family: ui-monospace, monospace;
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  color: var(--color-navy-deep);
+}
+
+.e-api-key-card__btn {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.e-api-key-card__btn--icon {
+  color: var(--color-ocean);
+  background: rgba(59, 130, 198, 0.1);
+}
+
+.e-api-key-card__btn--icon:hover {
+  background: rgba(59, 130, 198, 0.2);
+}
+
+.e-api-key-card__btn--secondary {
+  color: var(--color-ocean);
+  background: rgba(59, 130, 198, 0.1);
+  border: 1px solid rgba(59, 130, 198, 0.3);
+}
+
+.e-api-key-card__btn--secondary:hover:not(:disabled) {
+  background: rgba(59, 130, 198, 0.2);
+}
+
+.e-api-key-card__btn--danger {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+.e-api-key-card__btn--danger:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.e-api-key-card__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.e-api-key-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.e-api-key-card__date {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.e-api-key-card__actions {
+  display: flex;
+  gap: var(--space-2);
+}
