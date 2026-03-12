@@ -1,4 +1,6 @@
-const API_BASE = "/api/v1/enterprise";
+import { getApiBaseUrl } from "../api/config";
+
+const API_BASE = `${getApiBaseUrl()}/v1/enterprise`;
 
 const buildHeaders = (token) => {
   const headers = { "Content-Type": "application/json" };
@@ -23,8 +25,14 @@ const fetchJson = async (path, { token, signal } = {}) => {
   });
 
   if (!response.ok) {
-    const error = new Error(`Request failed: ${response.status}`);
+    const payload = await response.json().catch(() => null);
+    const detail = payload?.detail ?? payload?.message ?? payload?.error;
+    const message = Array.isArray(detail)
+      ? detail.map((item) => item?.msg || item).join(", ")
+      : detail;
+    const error = new Error(message || `Request failed: ${response.status}`);
     error.status = response.status;
+    error.payload = payload;
     throw error;
   }
 
@@ -35,6 +43,18 @@ const fetchJson = async (path, { token, signal } = {}) => {
 
 export const fetchEnterpriseProfile = ({ token, signal } = {}) =>
   fetchJson(`${API_BASE}/profile`, { token, signal });
+
+export const fetchEnterpriseAccountInfo = ({ token, signal } = {}) =>
+  fetchJson(`${API_BASE}/profile/account`, { token, signal });
+
+export const fetchEnterpriseUsers = ({ token, signal } = {}) =>
+  fetchJson(`${API_BASE}/profile/users`, { token, signal });
+
+export const fetchEnterpriseSettings = ({ token, signal } = {}) =>
+  fetchJson(`${API_BASE}/profile/settings`, { token, signal });
+
+export const fetchEnterpriseBilling = ({ token, signal } = {}) =>
+  fetchJson(`${API_BASE}/profile/billing`, { token, signal });
 
 export const fetchEnterpriseMetrics = ({ token, signal } = {}) =>
   fetchJson(`${API_BASE}/dashboard/metrics`, { token, signal });
