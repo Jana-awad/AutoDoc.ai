@@ -13,6 +13,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=72)
     client_type: Literal["business", "enterprise"]
+    plan_code: Literal["business", "enterprise"] | None = None
 
 
 class SignupResponse(BaseModel):

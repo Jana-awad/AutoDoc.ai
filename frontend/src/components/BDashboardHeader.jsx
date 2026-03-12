@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { fetchBusinessProfile } from "../services/businessDashboardApi";
+import { fetchBusinessAccountInfo } from "../services/businessDashboardApi";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -10,27 +10,31 @@ const getGreeting = () => {
 };
 
 function BDashboardHeader({ refreshKey, onRefresh, isRefreshing }) {
-  const { token, session } = useAuth();
-  const [profile, setProfile] = useState(null);
+  const { token } = useAuth();
+  const [account, setAccount] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     let isActive = true;
 
-    const loadProfile = async () => {
+    const loadAccount = async () => {
       setLoading(true);
       try {
-        const data = await fetchBusinessProfile({ token, signal: controller.signal });
-        if (isActive) setProfile(data);
+        const data = await fetchBusinessAccountInfo({ token, signal: controller.signal });
+        if (isActive) setAccount(data);
       } catch (error) {
-        if (isActive) setProfile(null);
+        if (isActive) setAccount(null);
       } finally {
         if (isActive) setLoading(false);
       }
     };
 
-    loadProfile();
+    loadAccount();
     return () => {
       isActive = false;
       controller.abort();
@@ -38,7 +42,7 @@ function BDashboardHeader({ refreshKey, onRefresh, isRefreshing }) {
   }, [token, refreshKey]);
 
   const displayName =
-    profile?.name || profile?.fullName || profile?.email || session?.userId || "";
+    account?.name || account?.email || "";
   const greeting = useMemo(() => getGreeting(), []);
   const dateLabel = useMemo(
     () =>
@@ -72,18 +76,18 @@ function BDashboardHeader({ refreshKey, onRefresh, isRefreshing }) {
 
       <div className="bdashboard-hero__welcome glass-card">
         <div className="bdashboard-hero__greeting">
-          <span className="bdashboard-hero__greeting-label">{greeting},</span>
+          <span className="bdashboard-hero__greeting-label">{greeting}, </span>
           {loading ? (
             <span className="bdashboard-hero__greeting-name bdashboard-skeleton-line" />
           ) : (
-            <span className="bdashboard-hero__greeting-name">{displayName || "—"}</span>
+            <span className="bdashboard-hero__greeting-name">{displayName || "Guest"}</span>
           )}
         </div>
         <div className="bdashboard-hero__meta">
           <span className="bdashboard-hero__date">{dateLabel}</span>
           <div className="bdashboard-hero__tags">
             <span className="bdashboard-pill">Business</span>
-            {profile?.plan && <span className="bdashboard-pill bdashboard-pill--solid">{profile.plan}</span>}
+            {account?.planName && <span className="bdashboard-pill bdashboard-pill--solid">{account.planName}</span>}
           </div>
         </div>
       </div>

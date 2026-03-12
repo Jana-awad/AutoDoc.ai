@@ -15,10 +15,28 @@
   position: sticky;
   top: 0;
   z-index: 1200;
+  padding-top: env(safe-area-inset-top, 0);
   background: var(--bnav-bg);
   border-bottom: 1px solid var(--bnav-border);
   box-shadow: var(--bnav-shadow);
   transition: box-shadow 240ms ease, background 240ms ease;
+}
+
+.bnavbar__backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(4px);
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.bnavbar__backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .bnavbar.is-scrolled {
@@ -26,6 +44,7 @@
 }
 
 .bnavbar__shell {
+  position: relative;
   max-width: 1200px;
   margin: 0 auto;
   padding: 14px 24px;
@@ -150,7 +169,12 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 6px;
+  padding: 12px;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .bnavbar__toggle span {
@@ -174,11 +198,16 @@
 }
 
 @media (max-width: 900px) {
+  .bnavbar__backdrop {
+    display: block;
+  }
+
   .bnavbar__menu {
     position: absolute;
     top: calc(100% + 8px);
-    right: 16px;
-    left: 16px;
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+    z-index: 10;
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
@@ -190,6 +219,9 @@
     opacity: 0;
     transform: translateY(-8px);
     pointer-events: none;
+    max-height: min(calc(100vh - 100px), 400px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .bnavbar__menu.is-open {
@@ -204,8 +236,17 @@
     gap: 10px;
   }
 
+  .bnavbar__link {
+    padding: 12px 14px;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   .bnavbar__logout {
     justify-content: center;
+    min-height: 48px;
   }
 
   .bnavbar__toggle {
@@ -216,9 +257,23 @@
 @media (max-width: 540px) {
   .bnavbar__shell {
     padding: 12px 18px;
+    padding-left: max(18px, env(safe-area-inset-left));
+    padding-right: max(18px, env(safe-area-inset-right));
   }
 
   .bnavbar__badge {
     display: none;
+  }
+
+  .bnavbar__logo {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .bnavbar__shell {
+    padding: 10px 14px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
   }
 }

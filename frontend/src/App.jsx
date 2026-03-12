@@ -7,15 +7,25 @@ import Contact from "./pages/public/Contact";
 import Login from "./pages/public/Login";
 import Sdashboard from "./pages/super/Sdashboard";
 import ClientsPlans from "./pages/super/clients_plans";
-import Monitoring from "./pages/super/monitoring";
 import TemplatesAi from "./pages/super/templates_ai";
+import TemplateBuilder from "./pages/super/TemplateBuilder";
+import AiOverview from "./pages/super/AiOverview";
+import TemplatesManager from "./pages/super/TemplatesManager";
 import EDashboard from "./pages/enterprise/Edashboard";
 import Template from "./pages/enterprise/template";
 import Api from "./pages/enterprise/api";
-import Profile from "./pages/enterprise/profile";
+import EnterpriseProfileLayout from "./pages/enterprise/profile/EnterpriseProfileLayout";
+import EAccountInfo from "./pages/enterprise/profile/EAccountInfo";
+import EManageUsers from "./pages/enterprise/profile/EManageUsers";
+import EBilling from "./pages/enterprise/profile/EBilling";
+import ESettings from "./pages/enterprise/profile/ESettings";
 import BDashboard from "./pages/business/B_dashboard";
 import BApi from "./pages/business/B_api";
-import BProfile from "./pages/business/B_profile";
+import BProfileLayout from "./pages/business/B_profile";
+import BAccountInfo from "./pages/business/profile/BAccountInfo";
+import BManageUsers from "./pages/business/profile/BManageUsers";
+import BBilling from "./pages/business/profile/BBilling";
+import BSettings from "./pages/business/profile/BSettings";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -33,20 +43,34 @@ function App() {
           <Route path="/super" element={<Sdashboard />} />
           <Route path="/super/clients-plans" element={<ClientsPlans />} />
           <Route path="/super/templates-ai" element={<TemplatesAi />} />
-          <Route path="/super/monitoring" element={<Monitoring />} />
+          <Route path="/super/templates-ai/builder" element={<TemplateBuilder />} />
+          <Route path="/super/templates-ai/ai-overview" element={<AiOverview />} />
+          <Route path="/super/templates-ai/manager" element={<TemplatesManager />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["enterprise_admin"]} />}>
           <Route path="/enterprise" element={<EDashboard />} />
           <Route path="/enterprise/template" element={<Template />} />
           <Route path="/enterprise/api" element={<Api />} />
-          <Route path="/enterprise/profile" element={<Profile />} />
+          <Route path="/enterprise/profile" element={<EnterpriseProfileLayout />}>
+            <Route index element={<EAccountInfo />} />
+            <Route path="account" element={<EAccountInfo />} />
+            <Route path="users" element={<EManageUsers />} />
+            <Route path="billing" element={<EBilling />} />
+            <Route path="settings" element={<ESettings />} />
+          </Route>
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["business_admin"]} />}>
           <Route path="/business" element={<BDashboard />} />
           <Route path="/business/api" element={<BApi />} />
-          <Route path="/business/profile" element={<BProfile />} />
+          <Route path="/business/profile" element={<BProfileLayout />}>
+            <Route index element={<BAccountInfo />} />
+            <Route path="account" element={<BAccountInfo />} />
+            <Route path="users" element={<BManageUsers />} />
+            <Route path="billing" element={<BBilling />} />
+            <Route path="settings" element={<BSettings />} />
+          </Route>
         </Route>
       </Routes>
     </Router>

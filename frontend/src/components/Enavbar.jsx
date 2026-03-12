@@ -28,6 +28,17 @@ const Enavbar = ({ onLogout } = {}) => {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   const handleLogout = () => {
     logout();
     if (onLogout) {
@@ -38,6 +49,11 @@ const Enavbar = ({ onLogout } = {}) => {
 
   return (
     <nav className={`enavbar ${isScrolled ? "is-scrolled" : ""}`}>
+      <div
+        className={`enavbar__backdrop ${isMenuOpen ? "is-open" : ""}`}
+        aria-hidden="true"
+        onClick={() => setIsMenuOpen(false)}
+      />
       <div className="enavbar__shell">
         <div className="enavbar__brand">
           <NavLink to="/enterprise" className="enavbar__logo">

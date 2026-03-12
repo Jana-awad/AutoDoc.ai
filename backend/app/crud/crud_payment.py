@@ -15,3 +15,10 @@ def list_payments_for_client(db: Session, client_id: int) -> list[Payment]:
         .order_by(Payment.id.desc())
         .all()
     )
+
+
+def delete_payments_for_client(db: Session, client_id: int) -> int:
+    """Delete all payments for a client. Returns number of deleted rows."""
+    deleted = db.query(Payment).filter(Payment.client_id == client_id).delete()
+    db.commit()
+    return deleted

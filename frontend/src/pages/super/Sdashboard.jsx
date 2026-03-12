@@ -97,7 +97,6 @@ function Sdashboard() {
         userEmail={userEmail}
         onLogout={() => {}}
         onSettings={() => {}}
-        onSearch={() => {}}
       />
       <main className="super-dashboard-main">
         <div className="super-dashboard-container">

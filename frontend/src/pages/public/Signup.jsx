@@ -97,6 +97,7 @@ const SignupForm = ({ plan, onSwitchPlan }) => {
             email: formData.email,
             password: formData.password,
             client_type: isEnterprise ? 'enterprise' : 'business',
+            plan_code: isEnterprise ? 'enterprise' : 'business',
           }),
         }
       );

@@ -27,6 +27,17 @@ const Bnavbar = ({ onLogout } = {}) => {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   const handleLogout = () => {
     logout();
     if (onLogout) {
@@ -37,6 +48,11 @@ const Bnavbar = ({ onLogout } = {}) => {
 
   return (
     <nav className={`bnavbar ${isScrolled ? "is-scrolled" : ""}`}>
+      <div
+        className={`bnavbar__backdrop ${isMenuOpen ? "is-open" : ""}`}
+        aria-hidden="true"
+        onClick={() => setIsMenuOpen(false)}
+      />
       <div className="bnavbar__shell">
         <div className="bnavbar__brand">
           <NavLink to="/business" className="bnavbar__logo">

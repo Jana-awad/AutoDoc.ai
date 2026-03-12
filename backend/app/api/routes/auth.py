@@ -6,6 +6,8 @@ from app.schemas.user import UserCreate, UserOut
 from app.schemas.signup import SignupRequest, SignupResponse, SuperAdminSignupRequest
 from app.crud.crud_user import get_by_email, create_user, authenticate
 from app.crud.crud_client import create_client
+from app.crud.crud_plan import list_active_plans
+from app.crud.crud_subscription import create_subscription
 from app.core.jwt import create_access_token
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -56,6 +58,33 @@ def _validate_client_type(payload: SignupRequest, expected: str) -> None:
         raise HTTPException(status_code=400, detail=f"client_type must be '{expected}'")
 
 
+def _resolve_signup_plan(db: Session, payload: SignupRequest):
+    plans = [plan for plan in list_active_plans(db) if plan.allow_creation]
+    if not plans:
+        plans = list_active_plans(db)
+    if not plans:
+        return None
+
+    def matches(plan, keyword):
+        return keyword in plan.name.lower()
+
+    plan_code = (payload.plan_code or payload.client_type).strip().lower()
+    if plan_code in {"business", "enterprise"}:
+        for plan in plans:
+            if matches(plan, plan_code):
+                return plan
+        if plan_code == "enterprise":
+            for plan in plans:
+                if plan.can_manage_templates:
+                    return plan
+        else:
+            for plan in plans:
+                if not plan.can_manage_templates:
+                    return plan
+
+    return plans[0]
+
+
 def _signup_with_role(
     payload: SignupRequest,
     role: UserRole,
@@ -83,6 +112,10 @@ def _signup_with_role(
             enforce_limits=False,
             commit=False,
         )
+        plan = _resolve_signup_plan(db, payload)
+        if not plan:
+            raise HTTPException(status_code=400, detail="No active plan available for signup")
+        create_subscription(db, client.id, plan.id, duration_days=30, commit=False)
         db.commit()
         db.refresh(client)
         db.refresh(user)

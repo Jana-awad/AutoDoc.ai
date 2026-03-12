@@ -69,10 +69,9 @@ const MonitorIcon = () => (
   </svg>
 );
 
-const SearchIcon = () => (
+const DashboardIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="11" cy="11" r="7" />
-    <path d="M21 21l-4.3-4.3" />
+    <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" />
   </svg>
 );
 
@@ -98,32 +97,29 @@ const LogoutIcon = () => (
 );
 
 const defaultMegaMenus = {
-  templates: {
-    title: 'Template & AI',
-    description: 'Design, train, and deploy extraction workflows.',
+  dashboard: {
+    title: 'Dashboard',
+    description: 'Super admin home and key metrics.',
     columns: [
       {
-        heading: 'Template Studio',
+        heading: 'Pages',
         items: [
-          { title: 'Template Builder', description: 'Design structured templates in minutes.', path: '/super/templates-ai', icon: <TemplateIcon /> },
-          { title: 'Field Library', description: 'Reusable fields with validation rules.', path: '/super/templates-ai', icon: <PipelineIcon /> },
-          { title: 'Version Control', description: 'Track template changes with confidence.', path: '/super/templates-ai', icon: <ShieldIcon /> },
+          { title: 'Dashboard', description: 'Overview and key metrics.', path: '/super', icon: <DashboardIcon /> },
         ],
       },
+    ],
+  },
+  templates: {
+    title: 'Template & AI',
+    description: 'Design, manage, and deploy extraction templates.',
+    columns: [
       {
-        heading: 'AI Pipeline',
+        heading: 'Pages',
         items: [
-          { title: 'Model Tuning', description: 'Fine-tune extraction accuracy.', path: '/super/templates-ai', icon: <SparkIcon /> },
-          { title: 'Data Normalization', description: 'Normalize outputs across sources.', path: '/super/templates-ai', icon: <PipelineIcon /> },
-          { title: 'Confidence Scoring', description: 'Review low-confidence fields.', path: '/super/templates-ai', icon: <ShieldIcon /> },
-        ],
-      },
-      {
-        heading: 'Automation',
-        items: [
-          { title: 'Workflow Rules', description: 'Route documents automatically.', path: '/super/templates-ai', icon: <PipelineIcon /> },
-          { title: 'Webhooks', description: 'Stream results to your systems.', path: '/super/templates-ai', icon: <TemplateIcon /> },
-          { title: 'Quality Gates', description: 'Enforce validation checkpoints.', path: '/super/templates-ai', icon: <ShieldIcon /> },
+          { title: 'Templates overview', description: 'Overview of templates and AI extraction.', path: '/super/templates-ai', icon: <TemplateIcon /> },
+          { title: 'Template builder', description: 'Create and configure AI extraction templates.', path: '/super/templates-ai/builder', icon: <PipelineIcon /> },
+          { title: 'AI overview', description: 'AI pipeline and extraction insights.', path: '/super/templates-ai/ai-overview', icon: <SparkIcon /> },
+          { title: 'Templates manager', description: 'Manage and organize your templates.', path: '/super/templates-ai/manager', icon: <ShieldIcon /> },
         ],
       },
     ],
@@ -164,14 +160,12 @@ const SuperNav = ({
   userName = 'User',
   userEmail = 'user@autodoc.ai',
   onLogout,
-  onSearch,
   onSettings,
 }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const navRef = useRef(null);
-  const searchRef = useRef(null);
   const [mounted, setMounted] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [isSolid, setIsSolid] = useState(false);
@@ -179,29 +173,20 @@ const SuperNav = ({
   const [openMega, setOpenMega] = useState(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState(null);
-  const [searchValue, setSearchValue] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
-  const [isMac, setIsMac] = useState(false);
 
   const navLinks = useMemo(
     () => [
-      { name: 'Dashboard', path: '/super' },
+      { name: 'Dashboard', path: '/super', mega: 'dashboard' },
       { name: 'Template & AI', path: '/super/templates-ai', mega: 'templates' },
       { name: 'Clients & Plans', path: '/super/clients-plans', mega: 'clients' },
-      { name: 'Monitoring', path: '/super/monitoring' },
     ],
     []
   );
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const prefersMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
-    setIsMac(prefersMac);
   }, []);
 
   useEffect(() => {
@@ -228,11 +213,6 @@ const SuperNav = ({
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        setIsSearchFocused(true);
-        searchRef.current?.focus();
-      }
       if (event.key === 'Escape') {
         setOpenMega(null);
         setIsMobileOpen(false);
@@ -264,13 +244,6 @@ const SuperNav = ({
       return location.pathname === '/super';
     }
     return location.pathname.startsWith(path);
-  };
-
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
-    if (onSearch) {
-      onSearch(searchValue);
-    }
   };
 
   const handleThemeToggle = () => {
@@ -334,6 +307,7 @@ const SuperNav = ({
                 <div
                   key={link.name}
                   className="supernav-link-wrapper"
+                  data-mega={link.mega || undefined}
                   onMouseEnter={() => hasMega && setOpenMega(link.mega)}
                   onMouseLeave={() => hasMega && setOpenMega(null)}
                   onFocus={() => hasMega && setOpenMega(link.mega)}
@@ -385,24 +359,6 @@ const SuperNav = ({
         </div>
 
         <div className="supernav-right">
-          <form className={`supernav-search ${isSearchFocused ? 'focused' : ''}`} onSubmit={handleSearchSubmit}>
-            <SearchIcon />
-            <input
-              ref={searchRef}
-              type="search"
-              placeholder="Search"
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              aria-label="Search"
-            />
-            <span className="supernav-search-hint" aria-hidden="true">
-              <kbd>{isMac ? '⌘' : 'Ctrl'}</kbd>
-              <kbd>K</kbd>
-            </span>
-          </form>
-
           <button className="supernav-theme-toggle" type="button" onClick={handleThemeToggle} aria-label="Toggle theme">
             <span className="theme-icon sun"><SunIcon /></span>
             <span className="theme-icon moon"><MoonIcon /></span>
