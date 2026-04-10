@@ -32,8 +32,7 @@ def list_clients(db: Session) -> list[Client]:
 def get_client(db: Session, client_id: int) -> Client | None:
     return db.query(Client).filter(Client.id == client_id).first()
 
-def get_client_by_api_key(db: Session, api_key: str) -> Client | None:
-    return db.query(Client).filter(Client.api_key == api_key).first()
+
 def delete_client(db: Session, client: Client) -> None:
     db.delete(client)
     db.commit()

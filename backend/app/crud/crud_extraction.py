@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy.orm import Session
 from app.models.extraction import Extraction
 
@@ -17,7 +19,7 @@ def create_extraction(
     document_id: int,
     field_id: int | None,
     value_text: str | None,
-    value_json: dict | None,
+    value_json: Any | None,
     confidence: float | None,
 ) -> Extraction:
     ex = Extraction(

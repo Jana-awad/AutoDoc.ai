@@ -94,7 +94,6 @@ def extract_with_llm(cleaned_text: str, context: dict) -> dict:
         response = client.chat.completions.create(
             model=settings.OPENAI_MODEL,
             messages=messages,
-            # temperature=0,
         )
     except openai.RateLimitError as e:
         raise ValueError(
@@ -257,34 +256,44 @@ def _detect_ambiguous_value(value: str) -> bool:
     """
     Detect if a value looks ambiguous or uncertain.
     Common indicators: "?", "maybe", "unknown", "N/A", multiple values, etc.
-    
+
     Returns:
         True if value appears ambiguous
     """
     if not value or not isinstance(value, str):
         return False
-    
+
     value_lower = value.lower().strip()
-    
-    # Ambiguity indicators
+
     ambiguity_indicators = [
-        '?', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined',
-        'maybe', 'possibly', 'perhaps', 'unclear', 'ambiguous',
-        'see', 'refer', 'check', 'verify', 'confirm'
+        "?",
+        "unknown",
+        "n/a",
+        "na",
+        "none",
+        "null",
+        "undefined",
+        "maybe",
+        "possibly",
+        "perhaps",
+        "unclear",
+        "ambiguous",
+        "see",
+        "refer",
+        "check",
+        "verify",
+        "confirm",
     ]
-    
-    # Check for ambiguity indicators
+
     if any(indicator in value_lower for indicator in ambiguity_indicators):
         return True
-    
-    # Check for multiple possible values (separated by "or", "/", "|")
-    if re.search(r'\s+or\s+|\s*/\s*|\s*\|\s*', value_lower):
+
+    if re.search(r"\s+or\s+|\s*/\s*|\s*\|\s*", value_lower):
         return True
-    
-    # Check if value is too short or too generic
+
     if len(value.strip()) < 2:
         return True
-    
+
     return False
 
 

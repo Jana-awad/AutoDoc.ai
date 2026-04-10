@@ -1,7 +1,15 @@
 """
-Load template and fields from DB for LLM extraction.
-Returns a simple structure used to build the extraction prompt.
+Load template and fields from DB for extraction.
+
+This context is the single source of truth for the extraction roadmap:
+- template name / description
+- field canonical output key
+- field label as it appears on document
+- field description (where to find it, format, rules)
+- field type
+- required flag
 """
+
 from sqlalchemy.orm import Session
 
 from app.crud.crud_document import get_document
@@ -11,16 +19,24 @@ from app.crud.crud_field import list_fields
 
 def get_extraction_context(db: Session, document_id: int) -> dict | None:
     """
-    Load template and fields for a document. Used to build the LLM prompt.
-
-    Args:
-        db: Database session
-        document_id: ID of the document being processed
+    Load template and fields for a document.
 
     Returns:
-        Dict with template_name, template_description, and fields (list of
-        field dicts with id, name, field_type, description, required).
-        Returns None if document or template not found.
+        {
+            "template_id": int,
+            "template_name": str,
+            "template_description": str,
+            "fields": [
+                {
+                    "id": int,
+                    "name": str,
+                    "label": str,
+                    "field_type": str,
+                    "description": str,
+                    "required": bool,
+                }
+            ]
+        }
     """
     doc = get_document(db, document_id)
     if not doc or doc.template_id is None:
@@ -31,18 +47,21 @@ def get_extraction_context(db: Session, document_id: int) -> dict | None:
         return None
 
     fields = list_fields(db, doc.template_id)
-    field_list = [
-        {
-            "id": f.id,
-            "name": f.name,
-            "field_type": f.field_type or "text",
-            "description": f.description or "",
-            "required": f.required,
-        }
-        for f in fields
-    ]
+    field_list = []
+    for f in fields:
+        field_list.append(
+            {
+                "id": f.id,
+                "name": f.name,
+                "label": (getattr(f, "label", None) or f.name or "").strip(),
+                "field_type": (f.field_type or "text").strip(),
+                "description": (f.description or "").strip(),
+                "required": bool(f.required),
+            }
+        )
 
     return {
+        "template_id": template.id,
         "template_name": template.name,
         "template_description": template.description or "",
         "fields": field_list,

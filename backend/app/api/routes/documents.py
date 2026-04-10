@@ -15,13 +15,10 @@ from app.crud.crud_document import (
     list_documents_for_user,
     set_document_status,
     delete_extractions_for_document,
-    create_mock_extractions,
-    update_document,
-    delete_document as delete_document_crud,
     update_document,
     delete_document as delete_document_crud,
 )
-from app.tasks.process_document_task import process_document_task
+from app.services.document_pipeline import run_document_processing
 from app.schemas.extraction import ExtractionOut
 from app.crud.crud_extraction import list_extractions_for_document
 from app.schemas.document_process import DocumentProcessOut
@@ -113,14 +110,22 @@ def process_document(
     if doc.template_id is None:
         raise HTTPException(status_code=400, detail="Document has no template_id")
 
-    # set to processing
     set_document_status(db, doc, "processing")
 
-    # Enqueue async task
-    task = process_document_task.delay(doc.id)
+    try:
+        created = run_document_processing(db, doc.id)
+        doc = get_document(db, document_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Processing failed: {e!s}") from e
 
-    # Return immediately with task info
-    return {"document": doc, "task_id": task.id, "status": "processing"}
+    return {
+        "document": doc,
+        "task_id": None,
+        "status": "done",
+        "extractions_created": created,
+    }
 @router.get("/{document_id}/extractions", response_model=list[ExtractionOut])
 def get_document_extractions(
     document_id: int,
@@ -245,11 +250,19 @@ def reprocess_document(
     if doc.template_id is None:
         raise HTTPException(status_code=400, detail="Document has no template_id")
 
-    # Set to processing
     set_document_status(db, doc, "processing")
 
-    # Enqueue async task
-    task = process_document_task.delay(doc.id)
+    try:
+        created = run_document_processing(db, doc.id)
+        doc = get_document(db, document_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Processing failed: {e!s}") from e
 
-    # Return immediately with task info
-    return {"document": doc, "task_id": task.id, "status": "processing"}
+    return {
+        "document": doc,
+        "task_id": None,
+        "status": "done",
+        "extractions_created": created,
+    }

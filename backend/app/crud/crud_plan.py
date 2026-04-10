@@ -62,10 +62,3 @@ def update_plan(
 def delete_plan(db: Session, plan: Plan) -> None:
     db.delete(plan)
     db.commit()
-
-def create_plan(db: Session, name: str, price_cents: int, is_active: bool = True) -> Plan:
-    p = Plan(name=name, price_cents=price_cents, is_active=is_active)
-    db.add(p)
-    db.commit()
-    db.refresh(p)
-    return p

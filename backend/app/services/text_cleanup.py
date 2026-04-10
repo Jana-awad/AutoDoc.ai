@@ -82,9 +82,12 @@ def _fix_common_ocr_character_errors(text: str) -> str:
     # Fix double punctuation (common OCR error)
     text = re.sub(r'([.,;:!?])\s*\1+', r'\1', text)
     
-    # Fix broken numbers (spaces in numbers)
-    # Pattern: digit space digit (likely a broken number)
-    text = re.sub(r'(\d)\s+(\d)', r'\1\2', text)
+    # Fix broken numbers (spaces in numbers) — ASCII and Eastern Arabic digits
+    for _ in range(24):
+        nxt = re.sub(r"([0-9\u0660-\u0669])\s+([0-9\u0660-\u0669])", r"\1\2", text)
+        if nxt == text:
+            break
+        text = nxt
     
     # Fix broken currency/percentage symbols
     # Pattern: space between symbol and number
@@ -182,7 +185,7 @@ def clean_ocr_text(raw_text: str) -> str:
     Uses general-purpose OCR cleanup rules, not specific phrase fixes.
 
     Args:
-        raw_text: Raw text extracted from OCR (from get_text_from_pdf)
+        raw_text: Raw text from OCR (e.g. ``get_text_and_structured_ocr_from_pdf`` → ``text``)
 
     Returns:
         Cleaned text ready for LLM processing
