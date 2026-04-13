@@ -1,6 +1,7 @@
 # Python cache
 __pycache__/
 *.pyc
+
 # Virtual environments
 venv/
 .venv/
@@ -8,6 +9,12 @@ venv/
 # Environment variables
 *.env
 .env.*
+.env
+backend/.env
+
+# Node / Vite
+node_modules/
+.vite/
 
 # Logs
 *.log
@@ -19,10 +26,6 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
-
-# Env
-.env
-backend/.env
 
 # Uploads
 uploads/

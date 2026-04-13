@@ -18,7 +18,8 @@ def create_access_token(
     }
 
     if role is not None:
-        payload["role"] = role
+        payload["role"] = role.value if hasattr(role, "value") else str(role)
+
 
     if client_id is not None:
         payload["client_id"] = client_id

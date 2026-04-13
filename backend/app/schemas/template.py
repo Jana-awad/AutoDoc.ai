@@ -15,6 +15,7 @@ class TemplateUpdate(BaseModel):
     is_global: bool | None = None
     client_id: int | None = None
 
+
 class TemplateOut(TemplateBase):
     id: int
     class Config:

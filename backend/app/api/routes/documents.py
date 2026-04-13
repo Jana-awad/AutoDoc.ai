@@ -30,7 +30,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 @router.post("/upload", response_model=DocumentOut)
 def upload_document(
     template_id: int = Form(...),
-    client_id: int | None = Form(None),  
+    client_id: int | None = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -53,8 +53,6 @@ def upload_document(
 
     with open(save_path, "wb") as f:
         f.write(file.file.read())
-
-    client_id = user.client_id if user.role != UserRole.SUPER_ADMIN else (user.client_id or 0)
 
     doc = create_document(db, client_id=final_client_id, template_id=template_id, file_url=save_path)
     return doc
@@ -126,6 +124,8 @@ def process_document(
         "status": "done",
         "extractions_created": created,
     }
+
+
 @router.get("/{document_id}/extractions", response_model=list[ExtractionOut])
 def get_document_extractions(
     document_id: int,
@@ -177,6 +177,8 @@ def get_document_extractions_summary(
         summary[key] = value
 
     return summary
+
+
 @router.delete("/{document_id}")
 def delete_document_route(
     document_id: int,
@@ -197,6 +199,8 @@ def delete_document_route(
         os.remove(doc.file_url)
     delete_document_crud(db, doc)
     return {"detail": "Document deleted"}
+
+
 @router.put("/{document_id}/status")
 def update_document_status(
     document_id: int,
@@ -216,6 +220,7 @@ def update_document_status(
     updated_doc = set_document_status(db, doc, status)
     return updated_doc
 
+
 @router.put("/{document_id}", response_model=DocumentOut)
 def update_document_route(
     document_id: int,
@@ -232,6 +237,8 @@ def update_document_route(
             raise HTTPException(status_code=403, detail="Forbidden")
 
     return update_document(db, doc, payload.template_id, payload.file_url, payload.status)
+
+
 @router.put("/{document_id}/reprocess", response_model=DocumentProcessOut)
 def reprocess_document(
     document_id: int,

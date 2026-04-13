@@ -9,7 +9,9 @@ from app.crud.crud_subscription import get_active_subscription
 def ensure_client_can_add_user(db: Session, client_id: int) -> None:
     sub = get_active_subscription(db, client_id)
     if not sub or not sub.plan:
-        raise HTTPException(status_code=403, detail="Client has no active subscription")
+        # No subscription data yet, so skip enforcing user limits.
+        return
+
 
     max_users = sub.plan.max_users
 

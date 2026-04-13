@@ -1,12 +1,20 @@
+import { Outlet } from "react-router-dom";
+import "../../components/variables.css";
+import "../../components/global.css";
+import BusinessSidebar from "./profile/BusinessSidebar.jsx";
 import "./B_profile.css";
 
-function BProfile() {
+function BProfileLayout() {
   return (
-    <div className="business-profile">
-      <h1>Business Profile</h1>
-      <p>Manage your business profile and preferences.</p>
+    <div className="b-profile-layout">
+      <BusinessSidebar />
+      <div className="b-profile-content">
+        <div className="b-profile-content-inner">
+          <Outlet />
+        </div>
+      </div>
     </div>
   );
 }
 
-export default BProfile;
+export default BProfileLayout;

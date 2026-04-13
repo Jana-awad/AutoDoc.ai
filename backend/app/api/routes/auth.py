@@ -6,6 +6,8 @@ from app.schemas.user import UserCreate, UserOut
 from app.schemas.signup import SignupRequest, SignupResponse
 from app.crud.crud_user import get_by_email, create_user, authenticate
 from app.crud.crud_client import create_client
+from app.crud.crud_plan import list_active_plans
+from app.crud.crud_subscription import create_subscription
 from app.core.jwt import create_access_token
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -14,11 +16,12 @@ from app.core.enums import UserRole
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
 @router.post("/register", response_model=UserOut)
 def register(
     payload: UserCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),  
+    current_user: User = Depends(get_current_user),
 ):
     # Email must be unique
     existing = get_by_email(db, payload.email)
@@ -55,6 +58,33 @@ def _validate_client_type(payload: SignupRequest, expected: str) -> None:
         raise HTTPException(status_code=400, detail=f"client_type must be '{expected}'")
 
 
+def _resolve_signup_plan(db: Session, payload: SignupRequest):
+    plans = [plan for plan in list_active_plans(db) if plan.allow_creation]
+    if not plans:
+        plans = list_active_plans(db)
+    if not plans:
+        return None
+
+    def matches(plan, keyword):
+        return keyword in plan.name.lower()
+
+    plan_code = (payload.plan_code or payload.client_type).strip().lower()
+    if plan_code in {"business", "enterprise"}:
+        for plan in plans:
+            if matches(plan, plan_code):
+                return plan
+        if plan_code == "enterprise":
+            for plan in plans:
+                if plan.can_manage_templates:
+                    return plan
+        else:
+            for plan in plans:
+                if not plan.can_manage_templates:
+                    return plan
+
+    return plans[0]
+
+
 def _signup_with_role(
     payload: SignupRequest,
     role: UserRole,
@@ -82,6 +112,10 @@ def _signup_with_role(
             enforce_limits=False,
             commit=False,
         )
+        plan = _resolve_signup_plan(db, payload)
+        if not plan:
+            raise HTTPException(status_code=400, detail="No active plan available for signup")
+        create_subscription(db, client.id, plan.id, duration_days=30, commit=False)
         db.commit()
         db.refresh(client)
         db.refresh(user)
@@ -106,6 +140,7 @@ def signup_enterprise(payload: SignupRequest, db: Session = Depends(get_db)):
     _validate_client_type(payload, "enterprise")
     return _signup_with_role(payload, UserRole.ENTERPRISE_ADMIN, db)
 
+
 @router.post("/login")
 def login(payload: dict, db: Session = Depends(get_db)):
     # expects: {"email": "...", "password": "..."}
@@ -119,11 +154,12 @@ def login(payload: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     token = create_access_token(
-    subject=str(user.id),
-    role=user.role,
-    client_id=user.client_id,
-)
+        subject=str(user.id),
+        role=user.role,
+        client_id=user.client_id,
+    )
     return {"access_token": token, "token_type": "bearer"}
+
 
 @router.post("/logout")
 def logout(_current_user: User = Depends(get_current_user)):

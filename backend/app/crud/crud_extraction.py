@@ -38,7 +38,7 @@ def update_extraction(
     db: Session,
     extraction: Extraction,
     value_text: str | None,
-    value_json: dict | None,
+    value_json: Any | None,
     confidence: float | None,
 ) -> Extraction:
     if value_text is not None:

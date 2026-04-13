@@ -5,8 +5,7 @@ import { Elements, CardElement } from '@stripe/react-stripe-js';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/Footer';
 import './Signup.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+import { getApiBaseUrl } from '../../api/config';
 const stripePromise = loadStripe('pk_test_your_publishable_key_here');
 const cardElementOptions = {
   style: {
@@ -85,7 +84,7 @@ const SignupForm = ({ plan, onSwitchPlan }) => {
     setError(null);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/auth/signup/${isEnterprise ? 'enterprise' : 'business'}`,
+        `${getApiBaseUrl()}/auth/signup/${isEnterprise ? 'enterprise' : 'business'}`,
         {
           method: 'POST',
           headers: {
@@ -98,6 +97,7 @@ const SignupForm = ({ plan, onSwitchPlan }) => {
             email: formData.email,
             password: formData.password,
             client_type: isEnterprise ? 'enterprise' : 'business',
+            plan_code: isEnterprise ? 'enterprise' : 'business',
           }),
         }
       );

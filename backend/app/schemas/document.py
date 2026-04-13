@@ -16,3 +16,4 @@ class DocumentUpdate(BaseModel):
     template_id: int | None = None
     file_url: str | None = None
     status: str | None = None
+

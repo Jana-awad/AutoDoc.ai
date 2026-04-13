@@ -8,6 +8,7 @@ class FieldCreate(BaseModel):
     required: bool = False
     description: str | None = None
 
+
 class FieldOut(FieldCreate):
     id: int
     class Config:

@@ -11,6 +11,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     username = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    website = Column(String(255), nullable=True)
     hashed_password = Column(String(255), nullable=False)
     role = Column(
         SqlEnum(
@@ -23,7 +25,7 @@ class User(Base):
     )
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-   
+    is_active = Column(Boolean, nullable=False, default=True)
+
     # relationships
     client = relationship("Client", back_populates="users", foreign_keys=[client_id])
-    #owned_client = relationship("Client", back_populates="owner", uselist=False, foreign_keys="Client.owner_user_id")

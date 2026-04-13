@@ -16,6 +16,7 @@ class PlanUpdate(BaseModel):
     can_manage_templates: bool | None = None
     is_active: bool | None = None
 
+
 class PlanOut(BaseModel):
     id: int
     name: str

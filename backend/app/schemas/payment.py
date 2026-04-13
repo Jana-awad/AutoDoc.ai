@@ -9,6 +9,7 @@ class PaymentCreate(BaseModel):
 class PaymentUpdate(BaseModel):
     status: str | None = None
 
+
 class PaymentOut(BaseModel):
     id: int
     subscription_id: int
