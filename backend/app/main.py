@@ -13,6 +13,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:5174",
+        "http://127.0.0.1:5174",
         "http://127.0.0.1:8000",
     ],
     # Dev: `npx serve` may pick another port if 5173 is busy; allow phone on LAN for the mobile demo.

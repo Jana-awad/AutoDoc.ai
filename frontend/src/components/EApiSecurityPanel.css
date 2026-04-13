@@ -1,0 +1,188 @@
+.e-api-security {
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-base);
+}
+
+.e-api-security:hover {
+  box-shadow: var(--glass-shadow-hover);
+}
+
+.e-api-security__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+  margin-bottom: var(--space-2);
+}
+
+.e-api-security__subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  margin-bottom: var(--space-5);
+  line-height: var(--line-height-relaxed);
+}
+
+.e-api-security__section {
+  margin-bottom: var(--space-5);
+}
+
+.e-api-security__section:last-child {
+  margin-bottom: 0;
+}
+
+.e-api-security__section-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-600);
+  margin-bottom: var(--space-3);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.e-api-security__ip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.e-api-security__ip-list ul {
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.e-api-security__ip-list li {
+  padding: var(--space-1) 0;
+}
+
+.e-api-security__ip-list code {
+  font-family: ui-monospace, monospace;
+  font-size: var(--font-size-xs);
+  background: var(--color-gray-100);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.e-api-security__ip-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  margin-bottom: var(--space-2);
+}
+
+.e-api-security__alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.e-api-security__alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(220, 38, 38, 0.06);
+  border-left: 4px solid #dc2626;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-navy-deep);
+}
+
+.e-api-security__alert-badge {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  color: #dc2626;
+}
+
+.e-api-security__audit-list,
+.e-api-security__delivery-list {
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.e-api-security__audit-list li,
+.e-api-security__delivery-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.e-api-security__audit-time,
+.e-api-security__delivery-time {
+  flex-shrink: 0;
+  color: var(--color-gray-500);
+  min-width: 140px;
+}
+
+.e-api-security__audit-action,
+.e-api-security__delivery-status {
+  flex-shrink: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.e-api-security__audit-detail {
+  color: var(--color-gray-600);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.e-api-security__delivery-status--ok {
+  color: #16a34a;
+}
+
+.e-api-security__delivery-status--fail {
+  color: #dc2626;
+}
+
+.e-api-security__delivery-code {
+  font-family: ui-monospace, monospace;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.e-api-security__skeleton {
+  height: 160px;
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-100) 25%,
+    var(--color-gray-200) 50%,
+    var(--color-gray-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: e-security-skeleton 1.2s ease-in-out infinite;
+  border-radius: var(--radius-lg);
+}
+
+@keyframes e-security-skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.e-api-security__error,
+.e-api-security__empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+.e-api-security__retry {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ocean);
+  background: rgba(59, 130, 198, 0.1);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.e-api-security__retry:hover {
+  background: rgba(59, 130, 198, 0.2);
+}

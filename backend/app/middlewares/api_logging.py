@@ -7,7 +7,7 @@ from starlette.responses import Response
 from app.db.session import SessionLocal
 from app.core.jwt import decode_token
 
-# paths you typically don’t want to log payloads for
+# paths you typically don't want to log payloads for
 SKIP_PATHS = {"/docs", "/openapi.json", "/redoc"}
 
 MAX_BODY = 10_000  # limit to keep DB safe

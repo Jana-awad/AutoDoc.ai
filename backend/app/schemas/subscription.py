@@ -9,6 +9,7 @@ class SubscriptionUpdate(BaseModel):
     plan_id: int | None = None
     status: str | None = None
 
+
 class SubscriptionOut(BaseModel):
     id: int
     client_id: int

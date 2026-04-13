@@ -15,8 +15,10 @@ def list_payments_for_client(db: Session, client_id: int) -> list[Payment]:
         .order_by(Payment.id.desc())
         .all()
     )
+
 def get_payment(db: Session, payment_id: int) -> Payment | None:
     return db.query(Payment).filter(Payment.id == payment_id).first()
+
 def delete_payment(db: Session, payment: Payment) -> None:
     db.delete(payment)
     db.commit()
@@ -28,3 +30,10 @@ def update_payment(db: Session, payment: Payment, status: str | None) -> Payment
     db.commit()
     db.refresh(payment)
     return payment
+
+
+def delete_payments_for_client(db: Session, client_id: int) -> int:
+    """Delete all payments for a client. Returns number of deleted rows."""
+    deleted = db.query(Payment).filter(Payment.client_id == client_id).delete()
+    db.commit()
+    return deleted

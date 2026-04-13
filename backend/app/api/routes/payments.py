@@ -22,6 +22,8 @@ def my_payments(db: Session = Depends(get_db), user: User = Depends(get_current_
     if user.client_id is None:
         raise HTTPException(status_code=400, detail="Superadmin has no client_id")
     return list_payments_for_client(db, user.client_id)
+
+
 @router.get("/client/{client_id}", response_model=list[PaymentOut])
 def payments_for_client(client_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if user.role != UserRole.SUPER_ADMIN:
@@ -51,6 +53,8 @@ def update_route(payment_id: int, payload: PaymentUpdate, db: Session = Depends(
     if user.role != UserRole.SUPER_ADMIN and payment.client_id != user.client_id:
         raise HTTPException(status_code=403, detail="Forbidden")
     return update_payment(db, payment, payload.status)
+
+
 @router.delete("/{payment_id}")
 def delete_payment_route(payment_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     payment = get_payment(db, payment_id)
@@ -60,6 +64,8 @@ def delete_payment_route(payment_id: int, db: Session = Depends(get_db), user: U
         raise HTTPException(status_code=403, detail="Forbidden")
     delete_payment(db, payment)
     return {"detail": "Payment deleted"}
+
+
 @router.post("/{payment_id}/refund")
 def refund_payment_route(payment_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     payment = get_payment(db, payment_id)

@@ -7,5 +7,6 @@ class DocumentProcessOut(BaseModel):
     status: str = "processing"
     extractions_created: int | None = None  # Only available after task completes
 
+
     class Config:
         from_attributes = True

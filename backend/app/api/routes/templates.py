@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.deps import get_db
 from app.api.deps import get_current_user, require_template_management
 from app.schemas.template import TemplateCreate, TemplateOut, TemplateUpdate
-from app.crud.crud_template import create_template, get_template, list_templates_for_user, update_template
+from app.crud.crud_template import create_template, get_template, list_templates_for_user, update_template, delete_template
 from app.crud.crud_field import list_fields, delete_fields_for_template as delete_fields_for_template_crud
 from app.models.user import User
 from app.core.enums import UserRole
@@ -57,8 +57,10 @@ def read_one(template_id: int, db: Session = Depends(get_db), user: User = Depen
         raise HTTPException(status_code=403, detail="Forbidden")
 
     return t
+
+
 @router.delete("/{template_id}")
-def delete_template_route(template_id: int, db: Session = Depends(get_db), user:    User = Depends(require_template_management)):
+def delete_template_route(template_id: int, db: Session = Depends(get_db), user: User = Depends(require_template_management)):
     t = get_template(db, template_id)
     if not t:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -69,9 +71,9 @@ def delete_template_route(template_id: int, db: Session = Depends(get_db), user:
             raise HTTPException(status_code=403, detail="Cannot delete this template")
 
     # Superadmin can delete anything
-    db.delete(t)
-    db.commit()
+    delete_template(db, t)
     return {"detail": "Template deleted"}
+
 
 @router.put("/{template_id}", response_model=TemplateOut)
 def update_template_route(
@@ -116,6 +118,7 @@ def update_template_route(
 
     return update_template(db, t, name, description, False)
 
+
 @router.get("/{template_id}/fields")
 def list_fields_for_template(template_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     t = get_template(db, template_id)
@@ -129,6 +132,8 @@ def list_fields_for_template(template_id: int, db: Session = Depends(get_db), us
     if not t.is_global and user.role != UserRole.SUPER_ADMIN and t.client_id != user.client_id:
         raise HTTPException(status_code=403, detail="Forbidden")
     return list_fields(db, template_id)
+
+
 @router.delete("/{template_id}/fields")
 def delete_fields_for_template_route(template_id: int, db: Session = Depends(get_db), user: User = Depends(require_template_management)):
     t = get_template(db, template_id)

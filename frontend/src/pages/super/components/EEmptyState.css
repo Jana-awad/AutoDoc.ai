@@ -1,0 +1,29 @@
+.e-empty-state {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  color: var(--color-gray-500);
+}
+
+.e-empty-state-icon {
+  margin-bottom: var(--space-4);
+  opacity: 0.6;
+}
+
+.e-empty-state-icon svg {
+  width: 48px;
+  height: 48px;
+  stroke: var(--color-gray-400);
+}
+
+.e-empty-state-message {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-navy-deep);
+  margin: 0 0 var(--space-2);
+}
+
+.e-empty-state-sub {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  margin: 0;
+}

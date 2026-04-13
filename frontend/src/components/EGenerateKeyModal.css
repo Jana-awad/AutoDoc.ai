@@ -1,0 +1,94 @@
+.e-generate-key-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.e-generate-key-form__error {
+  font-size: var(--font-size-sm);
+  color: #dc2626;
+  padding: var(--space-3);
+  background: rgba(220, 38, 38, 0.08);
+  border-radius: var(--radius-md);
+}
+
+.e-generate-key-form__label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-navy-deep);
+}
+
+.e-generate-key-form__input,
+.e-generate-key-form__select {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-base);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  color: var(--color-navy-deep);
+  transition: border-color var(--transition-fast);
+}
+
+.e-generate-key-form__input:focus,
+.e-generate-key-form__select:focus {
+  outline: none;
+  border-color: var(--color-ocean);
+  box-shadow: 0 0 0 3px rgba(59, 130, 198, 0.15);
+}
+
+.e-generate-key-form__input:disabled,
+.e-generate-key-form__select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.e-generate-key-form__hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  line-height: var(--line-height-relaxed);
+}
+
+.e-generate-key-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+.e-generate-key-form__btn {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.e-generate-key-form__btn--secondary {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  border: 1px solid var(--color-gray-200);
+}
+
+.e-generate-key-form__btn--secondary:hover {
+  background: var(--color-gray-200);
+}
+
+.e-generate-key-form__btn--primary {
+  background: var(--gradient-button);
+  color: var(--color-white);
+  border: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.e-generate-key-form__btn--primary:hover:not(:disabled) {
+  background: var(--gradient-button-hover);
+  transform: translateY(-1px);
+}
+
+.e-generate-key-form__btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

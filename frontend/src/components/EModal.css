@@ -1,0 +1,97 @@
+/* EModal - Glass morphism modal */
+.e-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(10, 22, 40, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: e-modal-fade-in 0.2s ease;
+}
+
+@keyframes e-modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.e-modal {
+  background: var(--gradient-card);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-light);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl), var(--shadow-glow-soft);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: e-modal-scale-in 0.25s ease;
+}
+
+@keyframes e-modal-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.e-modal--small {
+  width: 100%;
+  max-width: 420px;
+}
+
+.e-modal--medium {
+  width: 100%;
+  max-width: 640px;
+}
+
+.e-modal--large {
+  width: 100%;
+  max-width: 900px;
+}
+
+.e-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.e-modal-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-deep);
+}
+
+.e-modal-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--color-gray-500);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.e-modal-close:hover {
+  background: var(--color-gray-100);
+  color: var(--color-navy-deep);
+}
+
+.e-modal-body {
+  padding: var(--space-6);
+  overflow-y: auto;
+  flex: 1;
+}

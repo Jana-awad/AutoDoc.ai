@@ -28,7 +28,15 @@ def create(
             raise HTTPException(status_code=403, detail="Cannot modify this template")
 
     # superadmin can modify anything
-    return create_field(db, payload.template_id, payload.name, payload.label, payload.field_type, payload.required, payload.description)
+    return create_field(
+        db,
+        payload.template_id,
+        payload.name,
+        payload.label,
+        payload.field_type,
+        payload.required,
+        payload.description,
+    )
 
 
 @router.get("/template/{template_id}", response_model=list[FieldOut])
@@ -46,6 +54,8 @@ def list_for_template(template_id: int, db: Session = Depends(get_db), user: Use
         raise HTTPException(status_code=403, detail="Forbidden")
 
     return list_fields(db, template_id)
+
+
 @router.get("/{field_id}", response_model=FieldOut)
 def read_one(field_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     field = get_field(db, field_id)
@@ -64,6 +74,8 @@ def read_one(field_id: int, db: Session = Depends(get_db), user: User = Depends(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     return field
+
+
 @router.put("/{field_id}", response_model=FieldOut)
 def update_field_route(field_id: int, payload: FieldCreate, db: Session = Depends(get_db), user: User = Depends(require_template_management)):
     field = get_field(db, field_id)
@@ -80,6 +92,8 @@ def update_field_route(field_id: int, payload: FieldCreate, db: Session = Depend
 
     # superadmin can modify anything
     return update_field(db, field, payload.name, payload.label, payload.field_type, payload.required, payload.description)
+
+
 @router.delete("/{field_id}")
 def delete_field_route(field_id: int, db: Session = Depends(get_db), user: User = Depends(require_template_management)):
     field = get_field(db, field_id)

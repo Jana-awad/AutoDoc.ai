@@ -13,6 +13,7 @@ router = APIRouter(prefix="/plans", tags=["plans"])
 def list_plans(db: Session = Depends(get_db), _user: User = Depends(get_current_user)):
     return list_active_plans(db)
 
+
 @router.get("/all", response_model=list[PlanOut])
 def list_all(db: Session = Depends(get_db), _super: User = Depends(require_superadmin)):
     return list_plans_crud(db)
