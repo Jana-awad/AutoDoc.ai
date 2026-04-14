@@ -1,8 +1,8 @@
 from passlib.context import CryptContext
 
-# Use pbkdf2_sha256 to avoid bcrypt backend issues on Windows/Python 3.14
+# pbkdf2_sha256: default for new hashes. bcrypt: verify legacy hashes from older stacks.
 pwd_context = CryptContext(
-    schemes=["pbkdf2_sha256"],
+    schemes=["pbkdf2_sha256", "bcrypt"],
     deprecated="auto",
 )
 

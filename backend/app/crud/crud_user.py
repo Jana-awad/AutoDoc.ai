@@ -1,3 +1,4 @@
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.core.enums import UserRole
@@ -5,8 +6,26 @@ from app.core.security import hash_password, verify_password
 from app.core.limits import ensure_client_can_add_user
 
 
+def _normalize_email(email: str | None) -> str:
+    return (email or "").strip().lower()
+
+
 def get_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
+    """Match stored email case-insensitively (PostgreSQL lower())."""
+    normalized = _normalize_email(email)
+    if not normalized:
+        return None
+    # Primary: lower(email). Fallback: lower(trim(email)) for legacy rows with spaces.
+    return (
+        db.query(User)
+        .filter(
+            or_(
+                func.lower(User.email) == normalized,
+                func.lower(func.trim(User.email)) == normalized,
+            )
+        )
+        .first()
+    )
 
 def create_user(
     db: Session,
@@ -21,6 +40,10 @@ def create_user(
     # enforce user limit (only for client users)
     if client_id is not None and enforce_limits:
         ensure_client_can_add_user(db, client_id)
+
+    email = _normalize_email(email)
+    if not email:
+        raise ValueError("email is required")
 
     user = User(
         email=email,

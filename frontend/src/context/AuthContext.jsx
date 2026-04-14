@@ -6,6 +6,8 @@ export const ROLE_HOME = {
   super_admin: "/super",
   enterprise_admin: "/enterprise",
   business_admin: "/business",
+  // JWT uses enum value "user" for UserRole.USER — must map or loginWithToken rejects the token.
+  user: "/business",
 };
 
 const decodeBase64Url = (value) => {
