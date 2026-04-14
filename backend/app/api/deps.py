@@ -88,6 +88,14 @@ def require_business_admin(
     return current_user
 
 
+def require_end_user(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != UserRole.USER:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="End user role required")
+    if current_user.client_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has no client")
+    return current_user
+
+
 def require_enterprise_admin(
     current_user: User = Depends(get_current_user),
     token: str = Depends(oauth2_scheme),
