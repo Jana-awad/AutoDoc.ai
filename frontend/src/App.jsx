@@ -27,6 +27,9 @@ import BManageUsers from "./pages/business/profile/BManageUsers";
 import BBilling from "./pages/business/profile/BBilling";
 import BSettings from "./pages/business/profile/BSettings";
 import ProtectedRoute from "./components/ProtectedRoute";
+import UserAppShell from "./pages/user/UserAppShell";
+import UserDashboard from "./pages/user/components/Dashboard";
+import UserProfilePage from "./pages/user/UserProfilePage";
 
 function App() {
   return (
@@ -70,6 +73,13 @@ function App() {
             <Route path="users" element={<BManageUsers />} />
             <Route path="billing" element={<BBilling />} />
             <Route path="settings" element={<BSettings />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
+          <Route path="/user" element={<UserAppShell />}>
+            <Route index element={<UserDashboard />} />
+            <Route path="profile" element={<UserProfilePage />} />
           </Route>
         </Route>
       </Routes>

@@ -1,0 +1,111 @@
+.user-kpi__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-6);
+}
+
+@media (max-width: 1100px) {
+  .user-kpi__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .user-kpi__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.user-kpi__card {
+  padding: var(--space-7);
+  border-radius: 20px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.78));
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 140px;
+}
+
+.user-kpi__card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 198, 0.12), transparent 58%);
+  z-index: -1;
+}
+
+.user-kpi__card::before {
+  content: "";
+  position: absolute;
+  top: -26px;
+  right: -26px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(125, 211, 252, 0.4), rgba(125, 211, 252, 0));
+  pointer-events: none;
+}
+
+.user-kpi__label {
+  position: relative;
+  z-index: 1;
+  font-size: 0.78rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-500);
+  margin-bottom: var(--space-4);
+  line-height: var(--line-height-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  max-width: 16rem;
+}
+
+.user-kpi__value {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(var(--font-size-2xl), 2.1vw, var(--font-size-4xl));
+  font-weight: var(--font-weight-bold);
+  color: var(--color-navy-deep);
+  letter-spacing: -0.03em;
+  text-align: center;
+  line-height: var(--line-height-tight);
+}
+
+.user-kpi__skeleton {
+  min-height: 120px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.9) 0%,
+    rgba(241, 245, 249, 0.95) 50%,
+    rgba(226, 232, 240, 0.9) 100%
+  );
+  background-size: 200% 100%;
+  animation: user-kpi-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes user-kpi-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.user-kpi__error {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: rgba(254, 226, 226, 0.9);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #991b1b;
+  font-size: var(--font-size-sm);
+}
