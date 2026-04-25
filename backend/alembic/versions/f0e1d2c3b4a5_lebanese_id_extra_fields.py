@@ -60,6 +60,24 @@ NEW_FIELDS: list[tuple[str, str, str, bool, str]] = [
 ]
 
 
+def _has_column(conn, table_name: str, column_name: str) -> bool:
+    return (
+        conn.execute(
+            sa.text(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = :table_name
+                  AND column_name = :column_name
+                LIMIT 1
+                """
+            ),
+            {"table_name": table_name, "column_name": column_name},
+        ).scalar()
+        is not None
+    )
+
+
 def upgrade() -> None:
     conn = op.get_bind()
     row = conn.execute(
@@ -73,10 +91,29 @@ def upgrade() -> None:
         return
     template_id = row[0]
 
-    insert_field = sa.text(
-        "INSERT INTO fields (template_id, name, label, field_type, required, description) "
-        "VALUES (:template_id, :name, :label, :field_type, :required, :description)"
-    )
+    has_label = _has_column(conn, "fields", "label")
+    has_description = _has_column(conn, "fields", "description")
+
+    if has_label and has_description:
+        insert_field = sa.text(
+            "INSERT INTO fields (template_id, name, label, field_type, required, description) "
+            "VALUES (:template_id, :name, :label, :field_type, :required, :description)"
+        )
+    elif has_label and not has_description:
+        insert_field = sa.text(
+            "INSERT INTO fields (template_id, name, label, field_type, required) "
+            "VALUES (:template_id, :name, :label, :field_type, :required)"
+        )
+    elif (not has_label) and has_description:
+        insert_field = sa.text(
+            "INSERT INTO fields (template_id, name, field_type, required, description) "
+            "VALUES (:template_id, :name, :field_type, :required, :description)"
+        )
+    else:
+        insert_field = sa.text(
+            "INSERT INTO fields (template_id, name, field_type, required) "
+            "VALUES (:template_id, :name, :field_type, :required)"
+        )
 
     for name, label, field_type, required, field_desc in NEW_FIELDS:
         exists = conn.execute(
@@ -87,17 +124,18 @@ def upgrade() -> None:
         ).scalar()
         if exists:
             continue
-        conn.execute(
-            insert_field,
-            {
-                "template_id": template_id,
-                "name": name,
-                "label": label,
-                "field_type": field_type,
-                "required": required,
-                "description": field_desc,
-            },
-        )
+        params = {
+            "template_id": template_id,
+            "name": name,
+            "field_type": field_type,
+            "required": required,
+        }
+        if has_label:
+            params["label"] = label
+        if has_description:
+            params["description"] = field_desc
+
+        conn.execute(insert_field, params)
 
 
 def downgrade() -> None:

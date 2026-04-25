@@ -20,17 +20,37 @@ depends_on: Union[str, Sequence[str], None] = None
 FIELD_MARKER = "توقيع صاحب العلاقة"
 
 
+def _has_label_column(conn) -> bool:
+    return (
+        conn.execute(
+            sa.text(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'fields'
+                  AND column_name = 'label'
+                LIMIT 1
+                """
+            )
+        ).scalar()
+        is not None
+    )
+
+
 def upgrade() -> None:
     conn = op.get_bind()
+    has_label = _has_label_column(conn)
+
+    field_where = "name = :m OR label = :m" if has_label else "name = :m"
     conn.execute(
         sa.text(
             "DELETE FROM extractions WHERE field_id IN "
-            "(SELECT id FROM fields WHERE name = :m OR label = :m)"
+            f"(SELECT id FROM fields WHERE {field_where})"
         ),
         {"m": FIELD_MARKER},
     )
     conn.execute(
-        sa.text("DELETE FROM fields WHERE name = :m OR label = :m"),
+        sa.text(f"DELETE FROM fields WHERE {field_where}"),
         {"m": FIELD_MARKER},
     )
 

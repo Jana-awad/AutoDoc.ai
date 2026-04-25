@@ -19,6 +19,25 @@ depends_on: Union[str, Sequence[str], None] = None
 CV_TEMPLATE_NAME = "CV"
 
 
+def _has_column(conn, table_name: str, column_name: str) -> bool:
+    # Works on Postgres; avoids failing when running against older schemas.
+    return (
+        conn.execute(
+            sa.text(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = :table_name
+                  AND column_name = :column_name
+                LIMIT 1
+                """
+            ),
+            {"table_name": table_name, "column_name": column_name},
+        ).scalar()
+        is not None
+    )
+
+
 def upgrade() -> None:
     conn = op.get_bind()
     existing = conn.execute(
@@ -43,6 +62,9 @@ def upgrade() -> None:
         {"name": CV_TEMPLATE_NAME, "description": desc},
     ).fetchone()
     template_id = row[0]
+
+    has_label = _has_column(conn, "fields", "label")
+    has_description = _has_column(conn, "fields", "description")
 
     fields: list[tuple[str, str, str, bool, str]] = [
         (
@@ -139,22 +161,41 @@ def upgrade() -> None:
         ),
     ]
 
-    insert_field = sa.text(
-        "INSERT INTO fields (template_id, name, label, field_type, required, description) "
-        "VALUES (:template_id, :name, :label, :field_type, :required, :description)"
-    )
-    for name, label, field_type, required, field_desc in fields:
-        conn.execute(
-            insert_field,
-            {
-                "template_id": template_id,
-                "name": name,
-                "label": label,
-                "field_type": field_type,
-                "required": required,
-                "description": field_desc,
-            },
+    # Keep migration compatible with older DB schemas where some columns may be missing.
+    if has_label and has_description:
+        insert_field = sa.text(
+            "INSERT INTO fields (template_id, name, label, field_type, required, description) "
+            "VALUES (:template_id, :name, :label, :field_type, :required, :description)"
         )
+    elif has_label and not has_description:
+        insert_field = sa.text(
+            "INSERT INTO fields (template_id, name, label, field_type, required) "
+            "VALUES (:template_id, :name, :label, :field_type, :required)"
+        )
+    elif (not has_label) and has_description:
+        insert_field = sa.text(
+            "INSERT INTO fields (template_id, name, field_type, required, description) "
+            "VALUES (:template_id, :name, :field_type, :required, :description)"
+        )
+    else:
+        insert_field = sa.text(
+            "INSERT INTO fields (template_id, name, field_type, required) "
+            "VALUES (:template_id, :name, :field_type, :required)"
+        )
+
+    for name, label, field_type, required, field_desc in fields:
+        params = {
+            "template_id": template_id,
+            "name": name,
+            "field_type": field_type,
+            "required": required,
+        }
+        if has_label:
+            params["label"] = label
+        if has_description:
+            params["description"] = field_desc
+
+        conn.execute(insert_field, params)
 
 
 def downgrade() -> None:
