@@ -1,0 +1,55 @@
+# AutoDoc.ai - Production reverse proxy (Caddy)
+#
+# Caddy is recommended in production because it automatically obtains and
+# renews Let's Encrypt certificates for the domain below.
+#
+# Usage:
+#   1. Point DNS for autodoc.example.com at this server (A/AAAA record).
+#   2. Build the frontend: `cd frontend && npm ci && npm run build`
+#   3. Copy/symlink the build output (frontend/dist) to /var/www/autodoc.
+#   4. Run the FastAPI backend (any process manager) on 127.0.0.1:8000:
+#        uvicorn app.main:app --host 127.0.0.1 --port 8000 \
+#          --proxy-headers --forwarded-allow-ips="127.0.0.1"
+#   5. Start Caddy:  caddy run --config deploy/Caddyfile
+#
+# All traffic to http://autodoc.example.com is redirected to HTTPS automatically
+# by Caddy. The single public origin (https://autodoc.example.com) hosts both
+# the SPA and /api, which removes any need for CORS in production.
+
+{
+	# Global options. Set an admin email so Let's Encrypt can contact you about
+	# renewal failures.
+	email admin@example.com
+}
+
+autodoc.example.com {
+	encode zstd gzip
+
+	# Security headers. HSTS preloads HTTPS for the whole domain for 1 year.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "DENY"
+		Referrer-Policy           "strict-origin-when-cross-origin"
+		# Remove the default Server header.
+		-Server
+	}
+
+	# Backend API: /api/* -> 127.0.0.1:8000/* (Vite-style: strip the /api prefix
+	# so the FastAPI routes (/auth, /v1/...) keep matching).
+	handle_path /api/* {
+		reverse_proxy 127.0.0.1:8000 {
+			header_up X-Forwarded-Proto https
+			header_up X-Forwarded-Host  {host}
+			header_up X-Real-IP         {remote_host}
+		}
+	}
+
+	# Frontend: serve the built SPA. Falls back to index.html for client-side
+	# routing (React Router).
+	handle {
+		root * /var/www/autodoc
+		try_files {path} /index.html
+		file_server
+	}
+}
