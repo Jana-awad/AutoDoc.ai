@@ -66,7 +66,11 @@ function App() {
           </Route>
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={["business_admin"]} />}>
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={["business_admin", "user"]} />
+          }
+        >
           <Route path="/business" element={<BDashboard />} />
           <Route path="/business/api" element={<BApi />} />
           <Route path="/business/profile" element={<BProfileLayout />}>

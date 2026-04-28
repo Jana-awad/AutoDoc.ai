@@ -1,11 +1,15 @@
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Backend root (folder containing alembic.ini). Keeps DATABASE_URL consistent for uvicorn,
 # Celery, and Alembic even when the shell cwd is not the backend directory.
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
+
+# So GOOGLE_APPLICATION_CREDENTIALS and other vars in .env reach os.environ (e.g. Google client libs).
+load_dotenv(_BACKEND_ROOT / ".env", override=False)
 
 
 class Settings(BaseSettings):

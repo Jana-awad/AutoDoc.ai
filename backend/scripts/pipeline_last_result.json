@@ -1,0 +1,76 @@
+{
+  "status": "ok",
+  "document_id": 12,
+  "document_status": "done",
+  "client_id": 5,
+  "template_id": 10,
+  "template_name": "بطاقة هوية لبنانية",
+  "template_field_count": 8,
+  "extractions_created": 8,
+  "extractions": [
+    {
+      "field_id": 73,
+      "field_name": "الاسم",
+      "field_type": "text",
+      "required": true,
+      "value": "مها",
+      "confidence": 0.85
+    },
+    {
+      "field_id": 74,
+      "field_name": "الشهرة",
+      "field_type": "text",
+      "required": true,
+      "value": "نور الدين",
+      "confidence": 0.85
+    },
+    {
+      "field_id": 75,
+      "field_name": "اسم الأب",
+      "field_type": "text",
+      "required": true,
+      "value": "نجيب",
+      "confidence": 0.85
+    },
+    {
+      "field_id": 76,
+      "field_name": "اسم الأم وشهرتها",
+      "field_type": "text",
+      "required": true,
+      "value": "رباب الخطيب",
+      "confidence": 0.85
+    },
+    {
+      "field_id": 77,
+      "field_name": "محل الولادة",
+      "field_type": "text",
+      "required": true,
+      "value": "البحرين",
+      "confidence": 0.85
+    },
+    {
+      "field_id": 78,
+      "field_name": "تاريخ الولادة",
+      "field_type": "date",
+      "required": true,
+      "value": "١٩٧٤/٠١/١٥",
+      "confidence": 0.4
+    },
+    {
+      "field_id": 79,
+      "field_name": "الرقم",
+      "field_type": "text",
+      "required": false,
+      "value": null,
+      "confidence": 0.1
+    },
+    {
+      "field_id": 82,
+      "field_name": "الجنسية",
+      "field_type": "text",
+      "required": false,
+      "value": null,
+      "confidence": 0.1
+    }
+  ]
+}
