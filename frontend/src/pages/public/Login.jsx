@@ -47,7 +47,7 @@ const Login = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password,
         }),
       });
@@ -55,7 +55,13 @@ const Login = () => {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(data.detail || 'Invalid email or password. Please try again.');
+        const d = data.detail;
+        const msg = Array.isArray(d)
+          ? d.map((e) => e.msg || JSON.stringify(e)).join(' ')
+          : typeof d === 'string'
+            ? d
+            : 'Invalid email or password. Please try again.';
+        setError(msg);
         setLoadingForm(false);
         return;
       }

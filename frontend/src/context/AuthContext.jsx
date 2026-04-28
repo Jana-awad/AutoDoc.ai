@@ -1,4 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 const TOKEN_KEY = "autodoc_access_token";
 
@@ -6,12 +13,16 @@ export const ROLE_HOME = {
   super_admin: "/super",
   enterprise_admin: "/enterprise",
   business_admin: "/business",
-  user: "/user",
+  // JWT uses enum value "user" for UserRole.USER — must map or loginWithToken rejects the token.
+  user: "/business",
 };
 
 const decodeBase64Url = (value) => {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+  const padded = normalized.padEnd(
+    normalized.length + ((4 - (normalized.length % 4)) % 4),
+    "=",
+  );
   try {
     return atob(padded);
   } catch {
@@ -91,7 +102,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       restoreSession,
     }),
-    [session, loading, loginWithToken, logout, restoreSession]
+    [session, loading, loginWithToken, logout, restoreSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
