@@ -6,6 +6,7 @@ export const ROLE_HOME = {
   super_admin: "/super",
   enterprise_admin: "/enterprise",
   business_admin: "/business",
+  user: "/user",
 };
 
 const decodeBase64Url = (value) => {
