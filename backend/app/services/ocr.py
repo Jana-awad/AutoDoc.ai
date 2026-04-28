@@ -111,7 +111,12 @@ def _google_annotation_to_lines(ann: Any) -> list[dict[str, Any]]:
 
 
 def _ocr_image_google(image: Image.Image) -> tuple[str, list[dict[str, Any]]]:
-    from google.cloud import vision
+    try:
+        from google.cloud import vision
+    except ImportError as e:
+        raise RuntimeError(
+            "Google Cloud Vision is not installed. pip install -r requirements-google-vision.txt"
+        ) from e
 
     client = _get_vision_client()
     buf = BytesIO()
