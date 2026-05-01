@@ -1,18 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import SuperNav from "../../components/SuperNav";
-import {
-  fetchKeyMetrics,
-  fetchTopActiveClients,
-  fetchRecentActivity,
-  fetchSystemHealth,
-  fetchAIProcessingAnalytics,
-  fetchTemplateIntelligence,
-  fetchLiveApiUsage,
-  fetchAuditLog,
-  fetchSupportSLA,
-  fetchSecurityAccess,
-  fetchCurrentUser,
-} from "../../services/superDashboardService";
+import { useAuth } from "../../context/AuthContext";
+import { fetchDashboardBundle } from "../../services/superHubApi";
+import { fetchUserProfile } from "../../services/userDashboardApi";
 import EDashboardHeader from "./components/EDashboardHeader";
 import EMetricsGrid from "./components/EMetricsGrid";
 import EUserRanking from "./components/EUserRanking";
@@ -27,6 +17,7 @@ import ESecurityAccess from "./components/ESecurityAccess";
 import "./Sdashboard.css";
 
 function Sdashboard() {
+  const { token } = useAuth();
   const [userName, setUserName] = useState("Super Admin");
   const [userEmail, setUserEmail] = useState("admin@autodoc.ai");
   const [keyMetrics, setKeyMetrics] = useState(null);
@@ -44,45 +35,53 @@ function Sdashboard() {
   const [autoRefresh, setAutoRefresh] = useState(false);
 
   const loadAll = useCallback(async () => {
+    if (!token) {
+      setError("Sign in to load live dashboard metrics.");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const [user, metrics, clients, activity, health, ai, templates, apiUsage, audit, support, security] =
-        await Promise.all([
-          fetchCurrentUser(),
-          fetchKeyMetrics(),
-          fetchTopActiveClients(),
-          fetchRecentActivity(),
-          fetchSystemHealth(),
-          fetchAIProcessingAnalytics(),
-          fetchTemplateIntelligence(),
-          fetchLiveApiUsage(),
-          fetchAuditLog(),
-          fetchSupportSLA(),
-          fetchSecurityAccess(),
-        ]);
-      if (user?.name) setUserName(user.name);
-      if (user?.email) setUserEmail(user.email);
-      setKeyMetrics(metrics);
-      setTopClients(clients);
-      setRecentActivity(activity);
-      setSystemHealth(health);
-      setAiAnalytics(ai);
-      setTemplateIntel(templates);
-      setLiveApiUsage(apiUsage);
-      setAuditLog(audit);
-      setSupportSLA(support);
-      setSecurityAccess(security);
+      const bundle = await fetchDashboardBundle({ token });
+      setKeyMetrics(bundle.keyMetrics);
+      setTopClients(bundle.topClients);
+      setRecentActivity(bundle.recentActivity);
+      setSystemHealth(bundle.systemHealth);
+      setAiAnalytics(bundle.aiAnalytics);
+      setTemplateIntel(bundle.templateIntelligence);
+      setLiveApiUsage(bundle.liveApiUsage);
+      setAuditLog(bundle.auditLog);
+      setSupportSLA(bundle.supportSLA);
+      setSecurityAccess(bundle.securityAccess);
     } catch (err) {
       setError(err?.message || "Failed to load dashboard data.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const profile = await fetchUserProfile({ token });
+        if (cancelled || !profile) return;
+        if (profile.username) setUserName(profile.username);
+        if (profile.email) setUserEmail(profile.email);
+      } catch {
+        /* keep defaults */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -98,12 +97,12 @@ function Sdashboard() {
         onLogout={() => {}}
         onSettings={() => {}}
       />
-      <main className="super-dashboard-main">
+      <main id="main-content" className="super-dashboard-main" role="main">
         <div className="super-dashboard-container">
           <div className="super-dashboard-toolbar">
             <EDashboardHeader
               title="Super Dashboard"
-              description="Here’s what’s happening across your platform."
+              description="Live metrics from PostgreSQL: documents, API traffic, templates, and platform health."
               userName={userName}
             />
             <div className="super-dashboard-actions">
@@ -132,7 +131,7 @@ function Sdashboard() {
             </div>
           )}
 
-          <section className="super-dashboard-section">
+          <section className="super-dashboard-section" aria-label="Key metrics">
             <EMetricsGrid data={keyMetrics} loading={loading} error={error} />
           </section>
 
@@ -141,7 +140,7 @@ function Sdashboard() {
             <EActivityFeed data={recentActivity} loading={loading} error={null} />
           </div>
 
-          <section className="super-dashboard-section">
+          <section className="super-dashboard-section" aria-label="System health">
             <ESystemHealth data={systemHealth} loading={loading} error={null} />
           </section>
 
@@ -156,7 +155,7 @@ function Sdashboard() {
             <ESupportSLA data={supportSLA} loading={loading} error={null} />
           </div>
 
-          <section className="super-dashboard-section">
+          <section className="super-dashboard-section" aria-label="Security overview">
             <ESecurityAccess data={securityAccess} loading={loading} error={null} />
           </section>
         </div>

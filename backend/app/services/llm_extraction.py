@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.crud.crud_field import list_fields
+from app.crud.crud_platform_config import get_platform_config
 from app.models.template import Template
 
 logger = logging.getLogger(__name__)
@@ -187,6 +188,23 @@ def _resolve_runtime(
     return model, extra
 
 
+def _apply_platform_llm_policy(
+    db: Session,
+    messages: list[dict[str, str]],
+    template_prompts: dict[str, Any] | None,
+) -> None:
+    """Enforce allow-listed models and blocked prompt substrings from ``platform_config``."""
+    pc = get_platform_config(db)
+    blob = " ".join((m.get("content") or "") for m in messages)
+    for sub in (pc.blocked_prompt_substrings or []) or []:
+        if sub and str(sub) in blob:
+            raise ValueError("Prompt blocked by platform governance (blocked substring match).")
+    model, _ = _resolve_runtime(template_prompts)
+    allowed = pc.allowed_llm_models or []
+    if isinstance(allowed, list) and len(allowed) > 0 and model not in allowed:
+        raise ValueError(f"Model '{model}' is not in the deployment allow-list.")
+
+
 def _call_openai(messages: list[dict[str, str]], template_prompts: dict[str, Any] | None):
     if not settings.OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not set")
@@ -209,7 +227,7 @@ def _call_openai(messages: list[dict[str, str]], template_prompts: dict[str, Any
         raise ValueError(f"OpenAI API error: {e}") from e
 
 
-def extract_with_llm(cleaned_text: str, context: dict) -> dict:
+def extract_with_llm(cleaned_text: str, context: dict, db: Session | None = None) -> dict:
     """Call OpenAI to extract field values from cleaned document text.
 
     Used by the document-processing pipeline (after OCR).
@@ -218,6 +236,8 @@ def extract_with_llm(cleaned_text: str, context: dict) -> dict:
         return {}
 
     messages = _build_messages(cleaned_text, context)
+    if db is not None:
+        _apply_platform_llm_policy(db, messages, context.get("template_prompts"))
     response, _model = _call_openai(messages, context.get("template_prompts"))
 
     content = response.choices[0].message.content
@@ -298,6 +318,7 @@ def generate_from_template(
     messages = _build_messages(
         document_text or "", context, variables=variables or {}
     )
+    _apply_platform_llm_policy(db, messages, context.get("template_prompts"))
     response, model = _call_openai(messages, context.get("template_prompts"))
     content = response.choices[0].message.content or ""
 

@@ -11,7 +11,8 @@ import Monitoring from "./pages/super/monitoring";
 import TemplatesAi from "./pages/super/templates_ai";
 import TemplateBuilder from "./pages/super/TemplateBuilder";
 import AiOverview from "./pages/super/AiOverview";
-import TemplatesManager from "./pages/super/TemplatesManager";
+import SuperOperations from "./pages/super/SuperOperations";
+import ClientLens from "./pages/super/ClientLens";
 import EDashboard from "./pages/enterprise/Edashboard";
 import Template from "./pages/enterprise/template";
 import Api from "./pages/enterprise/api";
@@ -51,9 +52,10 @@ function App() {
           <Route path="/super/clients-plans" element={<ClientsPlans />} />
           <Route path="/super/templates-ai" element={<TemplatesAi />} />
           <Route path="/super/monitoring" element={<Monitoring />} />
+          <Route path="/super/operations" element={<SuperOperations />} />
+          <Route path="/super/clients/:clientId/lens" element={<ClientLens />} />
           <Route path="/super/templates-ai/builder" element={<TemplateBuilder />} />
           <Route path="/super/templates-ai/ai-overview" element={<AiOverview />} />
-          <Route path="/super/templates-ai/manager" element={<TemplatesManager />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["enterprise_admin"]} />}>
@@ -68,10 +70,6 @@ function App() {
             <Route path="billing" element={<EBilling />} />
             <Route path="settings" element={<ESettings />} />
           </Route>
-        </Route>
-
-        <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
-          <Route path="/app" element={<UApp />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["business_admin"]} />}>
@@ -90,6 +88,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
           <Route path="/user" element={<UserAppShell />}>
             <Route index element={<UserDashboard />} />
+            <Route path="documents" element={<UApp />} />
             <Route path="profile" element={<UserProfilePage />} />
           </Route>
         </Route>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import SuperBreadcrumbs from './SuperBreadcrumbs';
 import './SuperNav.css';
 
 const LogoMark = () => (
@@ -70,9 +71,14 @@ const MonitorIcon = () => (
 );
 
 const SearchIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="11" cy="11" r="7" />
-    <path d="M21 21l-4.3-4.3" />
+  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
+    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.75" />
+    <path
+      d="M21 21l-4.3-4.3"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
@@ -112,6 +118,7 @@ const defaultMegaMenus = {
         heading: 'Pages',
         items: [
           { title: 'Dashboard', description: 'Overview and key metrics.', path: '/super', icon: <DashboardIcon /> },
+          { title: 'Operations hub', description: 'Platform flags, audit, exports, health.', path: '/super/operations', icon: <MonitorIcon /> },
         ],
       },
     ],
@@ -125,8 +132,7 @@ const defaultMegaMenus = {
         items: [
           { title: 'Templates overview', description: 'Overview of templates and AI extraction.', path: '/super/templates-ai', icon: <TemplateIcon /> },
           { title: 'Template builder', description: 'Create and configure AI extraction templates.', path: '/super/templates-ai/builder', icon: <PipelineIcon /> },
-          { title: 'AI overview', description: 'AI pipeline and extraction insights.', path: '/super/templates-ai/ai-overview', icon: <SparkIcon /> },
-          { title: 'Templates manager', description: 'Manage and organize your templates.', path: '/super/templates-ai/manager', icon: <ShieldIcon /> },
+          { title: 'AI overview', description: 'OpenAI, Vision OCR, API keys, webhooks, usage.', path: '/super/templates-ai/ai-overview', icon: <SparkIcon /> },
         ],
       },
     ],
@@ -163,6 +169,30 @@ const defaultMegaMenus = {
   },
 };
 
+function buildCommandDestinations(navLinks) {
+  const list = [];
+  Object.values(defaultMegaMenus).forEach((m) => {
+    m.columns.forEach((col) => {
+      col.items.forEach((item) => {
+        list.push({
+          path: item.path,
+          title: item.title,
+          hay: `${item.title} ${item.description}`.toLowerCase(),
+        });
+      });
+    });
+  });
+  navLinks.forEach((link) => {
+    list.push({ path: link.path, title: link.name, hay: link.name.toLowerCase() });
+  });
+  list.push({
+    path: '/super/operations',
+    title: 'Operations hub',
+    hay: 'operations platform flags audit kill switch exports activity',
+  });
+  return list;
+}
+
 const SuperNav = ({
   userName = 'User',
   userEmail = 'user@autodoc.ai',
@@ -193,10 +223,13 @@ const SuperNav = ({
       { name: 'Dashboard', path: '/super', mega: 'dashboard' },
       { name: 'Template & AI', path: '/super/templates-ai', mega: 'templates' },
       { name: 'Clients & Plans', path: '/super/clients-plans', mega: 'clients' },
+      { name: 'Operations', path: '/super/operations' },
       { name: 'Monitoring', path: '/super/monitoring' },
     ],
     []
   );
+
+  const commandDestinations = useMemo(() => buildCommandDestinations(navLinks), [navLinks]);
 
   useEffect(() => {
     setMounted(true);
@@ -271,6 +304,18 @@ const SuperNav = ({
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
+    const q = searchValue.trim().toLowerCase();
+    if (q) {
+      const hit = commandDestinations.find(
+        (d) => d.hay.includes(q) || d.title.toLowerCase().includes(q)
+      );
+      if (hit) {
+        navigate(hit.path);
+        setSearchValue('');
+        setIsSearchFocused(false);
+        return;
+      }
+    }
     if (onSearch) {
       onSearch(searchValue);
     }
@@ -320,6 +365,9 @@ const SuperNav = ({
       ].join(' ')}
       ref={navRef}
     >
+      <a href="#main-content" className="supernav-skip-link">
+        Skip to main content
+      </a>
       <div className="supernav-inner">
         <div className="supernav-left">
           <Link to="/super" className="supernav-logo" aria-label="AutoDoc AI">
@@ -460,6 +508,8 @@ const SuperNav = ({
           </button>
         </div>
       </div>
+
+      <SuperBreadcrumbs />
 
       <div className={`supernav-mobile ${isMobileOpen ? 'open' : ''}`} aria-hidden={!isMobileOpen}>
         <div className="supernav-mobile-header">

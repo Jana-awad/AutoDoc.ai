@@ -12,3 +12,5 @@ from app.models.field import Field
 from app.models.document import Document
 from app.models.extraction import Extraction
 from app.models.api_log import ApiLog
+from app.models.platform_config import PlatformConfig
+from app.models.super_audit_log import SuperAuditLog

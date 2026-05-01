@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import "../../components/variables.css";
 import "../../components/global.css";
+import ErrorBoundary from "../../components/ErrorBoundary";
+import { ToastProvider } from "../../components/Toast";
 import { useAuth } from "../../context/AuthContext";
 import { fetchUserProfile } from "../../services/userDashboardApi";
 import Header from "./components/Header";
@@ -39,33 +41,44 @@ function UserAppShell() {
   const companyName = profile?.company_name || "";
 
   return (
-    <div className={`user-app ${sidebarOpen ? "user-app--sidebar-open" : ""}`}>
-      <button
-        type="button"
-        className="user-app__menu-btn"
-        aria-label="Open menu"
-        aria-expanded={sidebarOpen}
-        onClick={() => setSidebarOpen(true)}
-      >
-        <span className="user-app__menu-icon" />
-      </button>
+    <ToastProvider>
+      <div className={`user-app ${sidebarOpen ? "user-app--sidebar-open" : ""}`}>
+        <a className="user-app__skip-link" href="#user-main">
+          Skip to main content
+        </a>
 
-      <button
-        type="button"
-        className="user-app__backdrop"
-        aria-label="Close menu"
-        tabIndex={sidebarOpen ? 0 : -1}
-        onClick={() => setSidebarOpen(false)}
-      />
+        <button
+          type="button"
+          className="user-app__menu-btn"
+          aria-label="Open menu"
+          aria-expanded={sidebarOpen}
+          aria-hidden={sidebarOpen}
+          aria-controls="user-sidebar"
+          tabIndex={sidebarOpen ? -1 : 0}
+          onClick={() => setSidebarOpen(true)}
+        >
+          <span className="user-app__menu-icon" />
+        </button>
 
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <button
+          type="button"
+          className="user-app__backdrop"
+          aria-label="Close menu"
+          tabIndex={sidebarOpen ? 0 : -1}
+          onClick={() => setSidebarOpen(false)}
+        />
 
-      <Header displayName={displayName} companyName={companyName} profileError={profileError} />
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <main className="user-app__main">
-        <Outlet />
-      </main>
-    </div>
+        <Header displayName={displayName} companyName={companyName} profileError={profileError} />
+
+        <main id="user-main" className="user-app__main" tabIndex={-1}>
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
+        </main>
+      </div>
+    </ToastProvider>
   );
 }
 

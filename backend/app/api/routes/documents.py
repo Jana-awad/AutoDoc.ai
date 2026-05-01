@@ -8,6 +8,7 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.core.enums import UserRole
 from app.core.config import settings
+from app.crud.crud_platform_config import get_platform_config
 from app.core.permissions import ensure_user_can_use_template
 from app.crud.crud_document import (
     create_document,
@@ -43,6 +44,13 @@ def upload_document(
         if user.client_id is None:
             raise HTTPException(status_code=400, detail="User has no client")
         final_client_id = user.client_id
+
+    pc = get_platform_config(db)
+    if pc.uploads_paused:
+        raise HTTPException(
+            status_code=503,
+            detail="New document uploads are paused platform-wide. Contact your operator.",
+        )
 
     ensure_user_can_use_template(db, user, template_id)
 
@@ -108,13 +116,23 @@ def process_document(
     if doc.template_id is None:
         raise HTTPException(status_code=400, detail="Document has no template_id")
 
+    pc = get_platform_config(db)
+    if not pc.document_processing_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="Document processing is disabled platform-wide by operators.",
+        )
+
     set_document_status(db, doc, "processing")
 
     try:
         created = run_document_processing(db, doc.id)
         doc = get_document(db, document_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        msg = str(e)
+        if "disabled platform-wide" in msg:
+            raise HTTPException(status_code=503, detail=msg) from e
+        raise HTTPException(status_code=400, detail=msg) from e
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Processing failed: {e!s}") from e
 
@@ -257,13 +275,23 @@ def reprocess_document(
     if doc.template_id is None:
         raise HTTPException(status_code=400, detail="Document has no template_id")
 
+    pc = get_platform_config(db)
+    if not pc.document_processing_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="Document processing is disabled platform-wide by operators.",
+        )
+
     set_document_status(db, doc, "processing")
 
     try:
         created = run_document_processing(db, doc.id)
         doc = get_document(db, document_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        msg = str(e)
+        if "disabled platform-wide" in msg:
+            raise HTTPException(status_code=503, detail=msg) from e
+        raise HTTPException(status_code=400, detail=msg) from e
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Processing failed: {e!s}") from e
 

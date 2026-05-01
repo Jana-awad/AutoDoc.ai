@@ -1,23 +1,51 @@
+import { Link } from "react-router-dom";
 import "./KPICards.css";
 
-function KPICards({ kpis, loading, error }) {
+const isAllZero = (kpis) =>
+  kpis &&
+  Number(kpis.total_documents_processed || 0) === 0 &&
+  Number(kpis.successful_requests || 0) === 0 &&
+  Number(kpis.failed_requests || 0) === 0;
+
+function KPICards({ kpis, loading, error, onRetry }) {
   if (error) {
     return (
       <section className="user-kpi" aria-label="Dashboard KPIs">
-        <p className="user-kpi__error" role="alert">
-          {error}
-        </p>
+        <div className="user-kpi__error" role="alert">
+          <p className="user-kpi__error-text">{error}</p>
+          {onRetry ? (
+            <button type="button" className="user-kpi__retry" onClick={onRetry}>
+              Retry
+            </button>
+          ) : null}
+        </div>
       </section>
     );
   }
 
   if (loading || !kpis) {
     return (
-      <section className="user-kpi" aria-label="Dashboard KPIs">
+      <section className="user-kpi" aria-label="Dashboard KPIs" aria-busy="true">
         <div className="user-kpi__grid">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="user-kpi__skeleton" />
           ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (isAllZero(kpis)) {
+    return (
+      <section className="user-kpi" aria-label="Dashboard KPIs">
+        <div className="user-kpi__empty">
+          <h3 className="user-kpi__empty-title">No metrics yet</h3>
+          <p className="user-kpi__empty-text">
+            Once you process your first document, performance metrics will populate here.
+          </p>
+          <Link className="user-kpi__empty-cta" to="/user/documents">
+            Process a document
+          </Link>
         </div>
       </section>
     );

@@ -527,7 +527,7 @@ function TemplateBuilder() {
         onLogout={() => {}}
         onSettings={() => {}}
       />
-      <main className="super-template-builder-main">
+      <main id="main-content" className="super-template-builder-main" role="main">
         <div className="tpl-ai-container">
           <motion.header
             className="tpl-ai-header"

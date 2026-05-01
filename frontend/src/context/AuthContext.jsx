@@ -20,8 +20,10 @@ export const ROLE_HOME = {
   enterprise_admin: "/enterprise",
   business_admin: "/business",
   // Regular tenant users (created by an enterprise/business admin via the
-  // profile -> Manage users panel). They land on the document workspace.
-  user: "/app",
+  // profile -> Manage users panel). They land on the user shell, which
+  // exposes Dashboard / Documents (`/user/documents`) / Profile from its
+  // sidebar.
+  user: "/user",
 };
 
 const decodeBase64Url = (value) => {

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_end_user
+from app.api.deps import get_current_user, require_end_user, require_superadmin
 from app.core.security import verify_password
 from app.crud.crud_user import update_user_password
 from app.db.deps import get_db
@@ -16,7 +16,14 @@ from app.crud.crud_user import (
     update_user_password,
     update_user,
 )
-from app.schemas.user import ChangePasswordRequest, UserOut, UserProfileOut
+from app.schemas.user import (
+    ChangePasswordRequest,
+    UserOut,
+    UserPasswordUpdate,
+    UserProfileOut,
+    UserRoleUpdate,
+    UserUpdate,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 

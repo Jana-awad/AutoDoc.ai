@@ -282,7 +282,7 @@ function TemplatesAi() {
         onSettings={() => {}}
         onSearch={() => {}}
       />
-      <main className="super-templates-ai-main">
+      <main id="main-content" className="super-templates-ai-main" role="main">
         <div className="super-templates-ai-container">
           <header className="super-templates-ai-header">
             <div className="super-templates-ai-header-top">
