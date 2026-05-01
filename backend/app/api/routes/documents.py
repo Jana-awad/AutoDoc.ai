@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
@@ -25,7 +26,32 @@ from app.crud.crud_extraction import list_extractions_for_document
 from app.schemas.document_process import DocumentProcessOut
 from app.schemas.document import DocumentOut, DocumentUpdate
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+def _mark_document_failed_safely(db: Session, document_id: int) -> None:
+    """Defense-in-depth: guarantee the document never stays stuck on ``processing``.
+
+    The pipeline already attempts to set ``failed`` on its own, but if the
+    underlying error left the SQLAlchemy session in a broken state the inner
+    ``set_document_status`` call would also fail silently. We rollback any
+    pending transaction here, then best-effort flip the status — wrapped so
+    that a secondary failure cannot mask the original error returned to the
+    caller.
+    """
+    try:
+        db.rollback()
+    except Exception:
+        logger.exception("Rollback failed while marking document %s as failed", document_id)
+
+    try:
+        doc = get_document(db, document_id)
+        if doc and doc.status != "failed":
+            set_document_status(db, doc, "failed")
+    except Exception:
+        logger.exception("Failed to mark document %s as failed", document_id)
 
 
 @router.post("/upload", response_model=DocumentOut)
@@ -129,11 +155,13 @@ def process_document(
         created = run_document_processing(db, doc.id)
         doc = get_document(db, document_id)
     except ValueError as e:
+        _mark_document_failed_safely(db, document_id)
         msg = str(e)
         if "disabled platform-wide" in msg:
             raise HTTPException(status_code=503, detail=msg) from e
         raise HTTPException(status_code=400, detail=msg) from e
     except Exception as e:
+        _mark_document_failed_safely(db, document_id)
         raise HTTPException(status_code=502, detail=f"Processing failed: {e!s}") from e
 
     return {
@@ -288,11 +316,13 @@ def reprocess_document(
         created = run_document_processing(db, doc.id)
         doc = get_document(db, document_id)
     except ValueError as e:
+        _mark_document_failed_safely(db, document_id)
         msg = str(e)
         if "disabled platform-wide" in msg:
             raise HTTPException(status_code=503, detail=msg) from e
         raise HTTPException(status_code=400, detail=msg) from e
     except Exception as e:
+        _mark_document_failed_safely(db, document_id)
         raise HTTPException(status_code=502, detail=f"Processing failed: {e!s}") from e
 
     return {

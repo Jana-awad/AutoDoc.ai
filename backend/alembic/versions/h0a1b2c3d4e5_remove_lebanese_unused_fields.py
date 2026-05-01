@@ -1,9 +1,15 @@
 """Remove Lebanese ID fields not present on card: الجنس، تاريخ الانتهاء، رقم السجل
 
-Revision ID: g9f8e7d6c5b4
+Revision ID: h0a1b2c3d4e5
 Revises: f0e1d2c3b4a5
 Create Date: 2026-04-13
 
+NOTE: this migration originally shipped with revision id ``g9f8e7d6c5b4`` which
+collided with another migration (``g9f8e7d6c5b4_template_prompt_columns``).
+Alembic refuses to build a script directory when two scripts share the same
+revision id, so this file was renamed to ``h0a1b2c3d4e5`` and the merge
+migration ``i1_super_platform_audit`` was updated to chain through this new id
+instead of its parent ``f0e1d2c3b4a5``.
 """
 from typing import Sequence, Union
 
@@ -11,7 +17,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision: str = "g9f8e7d6c5b4"
+revision: str = "h0a1b2c3d4e5"
 down_revision: Union[str, Sequence[str], None] = "f0e1d2c3b4a5"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

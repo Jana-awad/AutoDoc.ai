@@ -35,7 +35,9 @@ class Settings(BaseSettings):
     PDF_EMBEDDED_MIN_CHARS_TO_SKIP_OCR: int = Field(default=40)
     GOOGLE_VISION_QUOTA_PROJECT_ID: str | None = Field(default=None)
     OPENAI_API_KEY: str = Field(default="default_key")  # put real value in .env
-    OPENAI_MODEL: str = Field(default="gpt-5-nano")  # Free-tier friendly; or gpt-4o-mini, gpt-4o
+    # Default to a real, generally-available model. Override per-environment via .env or
+    # per-template via the Template Builder UI (templates.llm_model).
+    OPENAI_MODEL: str = Field(default="gpt-4o-mini")  # or gpt-4o, gpt-4-turbo
 
 
 settings = Settings()

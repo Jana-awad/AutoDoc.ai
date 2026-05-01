@@ -13,8 +13,9 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 
 revision: str = "i1_super_platform_audit"
-# Merge branches: template_builder head and Lebanese ID fields head both exist in repo history.
-down_revision: Union[str, Sequence[str], None] = ("20260430_template_builder", "f0e1d2c3b4a5")
+# Merge branches: template_builder head and Lebanese ID cleanup head both exist in repo history.
+# ``h0a1b2c3d4e5`` is the renamed Lebanese cleanup migration (was a duplicate of g9f8e7d6c5b4).
+down_revision: Union[str, Sequence[str], None] = ("20260430_template_builder", "h0a1b2c3d4e5")
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
