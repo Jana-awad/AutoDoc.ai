@@ -228,7 +228,8 @@
 /* Metrics */
 .edashboard-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  /* Responsive KPI grid: prevent squished cards on smaller screens. */
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--space-5);
 }
 
@@ -236,6 +237,7 @@
   padding: var(--space-5);
   display: grid;
   gap: var(--space-3);
+  min-height: 140px;
   animation: fadeInUp 0.6s ease both;
   animation-delay: var(--delay, 0ms);
 }
@@ -250,12 +252,17 @@
 .edashboard-metric-card__label {
   font-size: var(--font-size-sm);
   color: var(--color-gray-500);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .edashboard-metric-card__value {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-navy-deep);
+  line-height: 1.1;
 }
 
 .edashboard-metric-card__unit {
@@ -270,6 +277,22 @@
   justify-content: space-between;
   gap: var(--space-2);
   font-size: var(--font-size-xs);
+  min-height: 18px;
+}
+
+@media (max-width: 1100px) {
+  .edashboard-metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .edashboard-metric-card__label {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
 }
 
 .edashboard-metric-card__change {
