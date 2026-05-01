@@ -363,7 +363,8 @@ def list_mine(db: Session = Depends(get_db), user: User = Depends(get_current_us
 @router.get("/accessible", response_model=list[TemplateOut])
 def list_accessible(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Templates the current user may use (same rules as GET /templates)."""
-    return list_templates_for_user(db, user)
+    items = list_templates_for_user(db, user)
+    return [_to_template_out(db, t) for t in items]
 
 
 @router.get("/{template_id}", response_model=TemplateOut)
