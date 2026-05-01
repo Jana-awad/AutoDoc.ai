@@ -1,0 +1,522 @@
+/* =========================================================================
+   Tenant "Process a document" page — shared between business + enterprise
+   ========================================================================= */
+
+.docproc {
+  min-height: 100vh;
+  background: var(--gradient-hero, linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%));
+  position: relative;
+}
+
+.docproc-main {
+  max-width: var(--container-max, 1280px);
+  margin: 0 auto;
+  padding: calc(var(--navbar-height, 72px) + 32px) var(--container-padding, 24px) 64px;
+  display: grid;
+  gap: 24px;
+}
+
+/* ----- Header ----- */
+.docproc-header {
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+.docproc-eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ocean, #2563eb);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.docproc-title {
+  font-family: var(--font-display, system-ui, sans-serif);
+  font-size: clamp(1.875rem, 3vw, 2.5rem);
+  font-weight: 700;
+  color: var(--color-navy-deep, #0a1628);
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.docproc-subtitle {
+  color: var(--color-gray-600, #475569);
+  font-size: 1rem;
+  max-width: 70ch;
+  line-height: 1.55;
+}
+
+/* ----- Cards ----- */
+.docproc-card {
+  background: var(--glass-bg-light, rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border-light, rgba(0, 0, 0, 0.06));
+  border-radius: var(--radius-2xl, 20px);
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(10, 22, 40, 0.06));
+  padding: 24px;
+}
+
+.docproc-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-navy-deep, #0a1628);
+  margin: 0 0 12px;
+}
+
+.docproc-card-title--mt {
+  margin-top: 24px;
+}
+
+.docproc-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.docproc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1100px) {
+  .docproc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ----- Banners ----- */
+.docproc-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.docproc-banner--success {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #047857;
+}
+
+.docproc-banner--error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+}
+
+.docproc-banner--info {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #1d4ed8;
+}
+
+.docproc-banner-close {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  opacity: 0.7;
+}
+
+.docproc-banner-close:hover {
+  opacity: 1;
+}
+
+/* ----- Template list ----- */
+.docproc-template-list {
+  display: grid;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.docproc-template {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.docproc-template:hover {
+  border-color: var(--color-ocean, #2563eb);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.docproc-template--active {
+  border-color: var(--color-ocean, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.docproc-template-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.docproc-template-name {
+  font-weight: 600;
+  color: var(--color-navy-deep, #0a1628);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docproc-template-meta {
+  font-size: 0.8rem;
+  color: var(--color-gray-600, #475569);
+}
+
+/* ----- File drop zone ----- */
+.docproc-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  padding: 32px 20px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  color: var(--color-gray-600, #475569);
+  margin-top: 12px;
+}
+
+.docproc-drop:hover {
+  border-color: var(--color-ocean, #2563eb);
+  background: rgba(37, 99, 235, 0.04);
+  color: var(--color-navy-deep, #0a1628);
+}
+
+.docproc-drop--over {
+  border-color: var(--color-ocean, #2563eb);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--color-navy-deep, #0a1628);
+}
+
+.docproc-drop--has-file {
+  border-style: solid;
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.05);
+  color: #065f46;
+}
+
+.docproc-drop-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.docproc-drop-hint {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.docproc-drop-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+/* ----- Buttons ----- */
+.docproc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.docproc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.docproc-btn--small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.docproc-btn--primary {
+  background: var(--gradient-button, linear-gradient(135deg, #2563eb, #1d4ed8));
+  color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.docproc-btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+.docproc-btn--primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.docproc-btn--ghost {
+  background: transparent;
+  color: var(--color-navy-deep, #0a1628);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.docproc-btn--ghost:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* ----- Result panel ----- */
+.docproc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-gray-600, #475569);
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.docproc-empty-text {
+  color: var(--color-gray-600, #475569);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.docproc-result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .docproc-result-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.docproc-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--color-navy-deep, #0a1628);
+}
+
+.docproc-fields {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.docproc-field-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 2fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+}
+
+.docproc-field-label code {
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.docproc-field-value {
+  font-size: 0.9rem;
+  color: var(--color-navy-deep, #0a1628);
+  word-break: break-word;
+}
+
+.docproc-json {
+  background: var(--color-navy-deep, #0a1628);
+  color: var(--color-sky-soft, #cbd5e1);
+  border-radius: 14px;
+  padding: 16px;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  margin: 0 0 8px;
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre;
+}
+
+/* ----- Status pills ----- */
+.docproc-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.docproc-pill--green {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.docproc-pill--amber {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.docproc-pill--red {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.docproc-pill--blue {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.docproc-pill--gray {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--color-gray-600, #475569);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* ----- History table ----- */
+.docproc-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.docproc-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.docproc-table th,
+.docproc-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 0.9rem;
+}
+
+.docproc-table th {
+  background: rgba(0, 0, 0, 0.02);
+  color: var(--color-gray-600, #475569);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.docproc-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.docproc-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.docproc-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: white;
+  color: var(--color-gray-600, #475569);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.docproc-icon-btn:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.3);
+  color: var(--color-ocean, #2563eb);
+}
+
+.docproc-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.docproc-icon-btn--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+}
+
+/* ----- Misc helpers ----- */
+.docproc-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-gray-600, #475569);
+  font-size: 0.9rem;
+}
+
+.docproc-muted {
+  color: var(--color-gray-600, #475569);
+  font-size: 0.85rem;
+}
+
+@keyframes docproc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.docproc-spin {
+  animation: docproc-spin 0.8s linear infinite;
+}

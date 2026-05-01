@@ -15,6 +15,7 @@ import TemplatesManager from "./pages/super/TemplatesManager";
 import EDashboard from "./pages/enterprise/Edashboard";
 import Template from "./pages/enterprise/template";
 import Api from "./pages/enterprise/api";
+import EDocuments from "./pages/enterprise/EDocuments";
 import EnterpriseProfileLayout from "./pages/enterprise/profile/EnterpriseProfileLayout";
 import EAccountInfo from "./pages/enterprise/profile/EAccountInfo";
 import EManageUsers from "./pages/enterprise/profile/EManageUsers";
@@ -22,6 +23,7 @@ import EBilling from "./pages/enterprise/profile/EBilling";
 import ESettings from "./pages/enterprise/profile/ESettings";
 import BDashboard from "./pages/business/B_dashboard";
 import BApi from "./pages/business/B_api";
+import BDocuments from "./pages/business/BDocuments";
 import BProfileLayout from "./pages/business/B_profile";
 import BAccountInfo from "./pages/business/profile/BAccountInfo";
 import BManageUsers from "./pages/business/profile/BManageUsers";
@@ -56,6 +58,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["enterprise_admin"]} />}>
           <Route path="/enterprise" element={<EDashboard />} />
           <Route path="/enterprise/template" element={<Template />} />
+          <Route path="/enterprise/documents" element={<EDocuments />} />
           <Route path="/enterprise/api" element={<Api />} />
           <Route path="/enterprise/profile" element={<EnterpriseProfileLayout />}>
             <Route index element={<EAccountInfo />} />
@@ -66,12 +69,9 @@ function App() {
           </Route>
         </Route>
 
-        <Route
-          element={
-            <ProtectedRoute allowedRoles={["business_admin", "user"]} />
-          }
-        >
+        <Route element={<ProtectedRoute allowedRoles={["business_admin"]} />}>
           <Route path="/business" element={<BDashboard />} />
+          <Route path="/business/documents" element={<BDocuments />} />
           <Route path="/business/api" element={<BApi />} />
           <Route path="/business/profile" element={<BProfileLayout />}>
             <Route index element={<BAccountInfo />} />

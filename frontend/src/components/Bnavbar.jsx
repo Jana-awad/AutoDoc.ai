@@ -5,6 +5,7 @@ import "./Bnavbar.css";
 
 const NAV_LINKS = [
   { label: "Home", to: "/business" },
+  { label: "Documents", to: "/business/documents" },
   { label: "API", to: "/business/api" },
   { label: "Profile", to: "/business/profile" },
 ];
