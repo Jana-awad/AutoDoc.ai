@@ -17,6 +17,27 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 The frontend dev server runs on `http://localhost:5173`. Vite proxies `/api/*`
 to the backend, so `getApiBaseUrl()` returns `/api` by default.
 
+## OCR (Google Cloud Vision)
+
+OCR is performed by `app/services/ocr.py` using Google Cloud Vision
+(`document_text_detection`). Install the Vision client and authenticate:
+
+```bash
+pip install -r requirements-google-vision.txt
+```
+
+Authentication options (pick one):
+
+* **Service account JSON** — set `GOOGLE_APPLICATION_CREDENTIALS` in
+  `backend/.env` to the absolute path of a service-account file with the
+  Vision API enabled. Optionally set `GOOGLE_VISION_QUOTA_PROJECT_ID`.
+* **Local dev shortcut** — run `gcloud auth application-default login` once;
+  the Vision client will pick the credentials up automatically.
+
+PDFs with selectable text skip OCR (controlled by
+`PDF_EMBEDDED_MIN_CHARS_TO_SKIP_OCR`); image-only pages and raster uploads
+are sent to Vision. See `.env.example` for all OCR tuning knobs.
+
 ## Template Builder pipeline (Super Admin)
 
 The Super Admin page **`/super/templates-ai/builder`** is the single source of

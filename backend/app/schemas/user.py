@@ -25,3 +25,13 @@ class UserOut(UserBase):
     id: int
     class Config:
         from_attributes = True
+
+
+class UserProfileOut(UserOut):
+    company_name: str | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    """Current and new password for secure password change."""
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=72)

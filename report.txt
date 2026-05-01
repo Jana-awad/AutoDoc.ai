@@ -1,0 +1,1584 @@
+# AutoDoc.ai — Technical Report (Clear / Human-Friendly Edition)
+
+This report is reorganized to be easier to read:
+
+- Start with the big picture (what the system does + how data flows)
+- Learn the core concepts (Client, User, Template, Field, Document, Extraction)
+- Then go layer-by-layer: Database → Backend API → Pipeline → Frontend → Deployment/Test
+- The original exhaustive detail is kept as an appendix at the end
+
+If you tell me your level (beginner / intermediate / advanced) and what you’re trying to build next
+(templates UI, upload UI, billing, monitoring), I can tailor this further.
+
+---
+
+## Table of contents
+
+1. Project overview (plain English)
+2. Glossary (core objects)
+3. System diagrams (request flow + pipeline)
+4. Folder structure (how the repo is organized)
+5. Database design (relationships + table catalog)
+6. Backend API (how requests are handled + endpoint groups)
+7. Security (what protections exist + where)
+8. End-to-end pipeline (upload → OCR → LLM → DB)
+9. Frontend logic (routing, auth, API calls)
+10. Deployment & infrastructure
+11. Testing
+12. Trade-offs & next improvements
+13. Appendix: original exhaustive detail
+
+---
+
+## 1. Project overview (plain English)
+
+AutoDoc.ai is a multi-tenant AI document extraction system.
+A user logs in, uploads a document (PDF or image), selects a Template (a list of fields to extract),
+and the backend:
+
+1) extracts text (embedded PDF text when available; otherwise Google Vision OCR)
+2) cleans the text
+3) asks an OpenAI model to produce JSON matching the template fields
+4) assigns a confidence score per field
+5) stores the results in PostgreSQL as Extraction rows
+
+The frontend is a React SPA with a public marketing site and role-based dashboards.
+
+### Technologies (grouped)
+
+Backend:
+- FastAPI + Uvicorn
+- SQLAlchemy ORM + Alembic migrations
+- PostgreSQL (JSONB + native ENUM for roles)
+- Passlib hashing + python-jose JWT
+- PyMuPDF + Pillow + Google Cloud Vision (OCR)
+- OpenAI SDK (LLM extraction)
+
+Frontend:
+- React + React Router + Vite
+- Tailwind CSS
+- Stripe SDKs included (UI only currently)
+
+Infra:
+- Local dev workflow, .env configuration (no Dockerfile / no CI/CD in repo)
+
+---
+
+## 2. Glossary (the core objects)
+
+If you understand these, the whole system becomes predictable:
+
+- Client: a tenant/company
+- User: a person who logs in (belongs to a Client except super_admin)
+- Role: user, business_admin, enterprise_admin, super_admin
+- Plan: subscription entitlements (max users, can_manage_templates)
+- Template: extraction blueprint (global or client-specific)
+- Field: one extractable value definition inside a Template
+- Document: an uploaded file + processing status
+- Extraction: one extracted field value for one Document
+
+---
+
+## 3. System diagrams
+
+### 3.1 Request/response flow
+
+`
+React UI
+  → (fetch + Authorization: Bearer JWT)
+FastAPI
+  → Middleware: CORS
+  → Middleware: API logging → api_logs
+  → Dependency: get_current_user (JWT → user)
+  → Route handler
+  → CRUD layer (SQLAlchemy)
+  → Services (OCR + LLM pipeline when processing)
+PostgreSQL
+`
+
+### 3.2 Extraction pipeline flow
+
+`
+Upload
+  → OCR text (embedded or Google Vision)
+  → Clean text
+  → OpenAI extraction (JSON)
+  → Confidence scoring
+  → Save Extraction rows
+  → Return results
+`
+
+---
+
+## 4. Folder structure (how the repo is organized)
+
+Top-level:
+
+- `backend/`: FastAPI service + DB models + pipeline + migrations
+- `frontend/`: React SPA
+
+Backend mental model:
+
+- `backend/app/models/`: tables
+- `backend/app/schemas/`: request/response DTOs
+- `backend/app/crud/`: DB operations
+- `backend/app/api/routes/`: HTTP endpoints
+- `backend/app/services/`: OCR/LLM pipeline
+- `backend/app/core/`: config, JWT, hashing, permissions, limits
+- `backend/alembic/versions/`: schema migrations + seed data
+
+Frontend mental model:
+
+- `frontend/src/App.jsx`: route map
+- `frontend/src/context/AuthContext.jsx`: auth/session state
+- `frontend/src/components/`: reusable UI
+- src/pages/public/: marketing + login/signup
+- src/pages/{super,enterprise,business}/: dashboards (mostly placeholders today)
+
+---
+
+## 5. Database design (relationships first)
+
+High-level relationships:
+
+`
+clients 1─┬─* users
+          ├─* templates  (template.client_id nullable ⇒ global)
+          ├─* documents ─* extractions ─1 fields ─1 templates
+          ├─* subscriptions ─1 plans
+          │                 └─* payments
+          └─* api_logs
+`
+
+For the full table-by-table catalog (every column, constraint, and rationale), see the appendix.
+
+---
+
+## 6. Backend API (how to think about requests)
+
+Typical request lifecycle:
+
+1) CORS middleware
+2) API logging middleware
+3) Dependencies: DB session + current user (JWT)
+4) Optional role checks (
+equire_superadmin, 
+equire_template_management)
+5) Route handler
+6) CRUD/services
+7) Response returned
+8) Log row written to `api_logs`
+
+Endpoint groups:
+
+- Auth: /auth/*
+- Tenants: /clients/*
+- Users: /users/*
+- Billing: /plans/*, /subscriptions/*, /payments/*
+- Templates/Fields: /templates/*, /fields/*
+- Documents: /documents/*
+- Extractions: /extractions/*
+
+For the full endpoint-by-endpoint breakdown (schemas + step-by-step flow), see the appendix.
+
+---
+
+## 7. Security (what exists, where)
+
+- Password hashing: `backend/app/core/security.py` (Passlib)
+- JWT: `backend/app/core/jwt.py` + enforced via `backend/app/api/deps.py`
+- Authorization (roles): `require_superadmin`, `require_template_management` in `backend/app/api/deps.py`
+- Tenant isolation: route-level client_id checks across resources
+- Template access control: `backend/app/core/permissions.py`
+- Upload hardening: UUID filenames in `backend/app/api/routes/documents.py`
+- SQL injection prevention: SQLAlchemy bound parameters; Alembic uses sa.text(..., params)
+- Missing today: rate limiting, refresh tokens, token revocation list
+
+---
+
+## 8. End-to-end pipeline (one user action)
+
+User uploads and processes a document:
+
+1) POST /documents/upload saves file + creates Document row
+2) POST /documents/{id}/process runs OCR + LLM extraction and writes Extractions
+3) GET /documents/{id}/extractions or /extractions/summary returns results
+
+Key files involved:
+
+- `backend/app/api/routes/documents.py`
+- `backend/app/services/document_pipeline.py`
+- `backend/app/services/ocr.py`
+- `backend/app/services/text_cleanup.py`
+- `backend/app/services/extraction_context.py`
+- `backend/app/services/llm_extraction.py`
+- `backend/app/crud/crud_extraction.py`
+
+Full line-by-line pipeline trace is in the appendix.
+
+---
+
+## 9. Frontend logic (what’s implemented today)
+
+- Routing: `frontend/src/App.jsx`
+- Auth state: `frontend/src/context/AuthContext.jsx` (token in localStorage)
+- Route guard: `frontend/src/components/ProtectedRoute.jsx`
+- API usage: pages call `fetch` directly (no shared client module yet)
+- Role dashboards exist but are mostly placeholder UIs
+
+---
+
+## 10. Deployment & infrastructure
+
+- No Dockerfile / docker-compose in repo
+- No CI/CD config in repo
+- Backend config via .env
+- Frontend config via VITE_API_BASE_URL
+
+---
+
+## 11. Testing
+
+- No automated 	ests/ folder
+- Manual/integration scripts exist in `backend/scripts/` (signup/login/upload/process flows)
+
+---
+
+## 12. Trade-offs & improvements
+
+Biggest trade-off: processing is synchronous inside the HTTP request.
+Improvements to prioritize:
+
+- Background processing (Celery/Redis)
+- Rate limiting
+- Token refresh + revocation
+- Real refund audit trail (don’t delete payments)
+- Build the missing dashboard UIs on top of existing APIs
+- Add pytest/Vitest suites
+- Add Docker + CI pipeline
+
+---
+
+## Appendix: Original exhaustive detail (verbatim)\n
+
+### 2.1 Top-level
+
+```
+AutoDoc.ai/
+├─ .gitignore                 Ignores venv, .env, uploads/, IDE dirs, __pycache__.
+├─ alembic.ini                Placeholder note; real alembic.ini lives in backend/.
+├─ README.md                  Two-line description + branching policy.
+├─ backend/                   FastAPI service (see 2.2).
+├─ frontend/                  Vite + React 19 SPA (see 2.3).
+└─ report.txt                 This document.
+```
+
+### 2.2 Backend (`backend/`)
+
+```
+backend/
+├─ alembic.ini                (Alembic config, not shown; used by Alembic.)
+├─ requirements.txt           Pinned runtime + OCR deps. Chains to requirements-google-vision.txt.
+├─ alembic/
+│  ├─ env.py                  Alembic online/offline runner. Imports app.core.config.settings
+│  │                          to wire DATABASE_URL, and imports every model so
+│  │                          Base.metadata is populated for autogenerate.
+│  ├─ README
+│  ├─ script.py.mako          Migration template.
+│  └─ versions/               Migration files, applied in order via down_revision chain:
+│     ├─ 9c7abaf1781f_create_initial_tables.py
+│     ├─ d4c49f63235c_plan_can_manage_templates.py
+│     ├─ e3b9c2a4d1f7_user_role_enum.py
+│     ├─ f1a2b3c4d5e6_user_role_enum_underscores.py
+│     ├─ c2a1b3c4d5e6_add_field_label.py
+│     ├─ a1b2c3d4e5f6_add_field_description.py
+│     ├─ 20260306_country_industry.py          (no-op placeholder)
+│     ├─ b7c8d9e0f1a2_seed_cv_template.py       (seeds global "CV" template)
+│     ├─ c8d9e0f1a2b3_remove_field_tawqeem.py   (deletes توقيع صاحب العلاقة)
+│     ├─ e0f1a2b3c4d5_seed_lebanese_id_template.py (seeds Arabic LB ID template)
+│     ├─ f0e1d2c3b4a5_lebanese_id_extra_fields.py
+│     └─ g9f8e7d6c5b4_remove_lebanese_unused_fields.py
+├─ app/
+│  ├─ main.py                 FastAPI app factory. Installs APILoggingMiddleware,
+│  │                          CORS (allow_origins + regex), custom_openapi with
+│  │                          BearerAuth security scheme, root route, api_router.
+│  ├─ api/
+│  │  ├─ deps.py              Auth deps: oauth2_scheme, get_current_user, require_superadmin,
+│  │  │                       require_template_management (checks Plan.can_manage_templates).
+│  │  ├─ router.py            Mounts all sub-routers under a single APIRouter.
+│  │  └─ routes/
+│  │     ├─ auth.py           /auth/register, /auth/signup/business, /auth/signup/enterprise,
+│  │     │                    /auth/login, /auth/logout.
+│  │     ├─ users.py          /users/me, /users CRUD (superadmin), role/password updates.
+│  │     ├─ clients.py        /clients CRUD (superadmin only).
+│  │     ├─ plans.py          /plans CRUD (public read; superadmin write).
+│  │     ├─ subscriptions.py  /subscriptions: me, create, cancel, change-plan, all.
+│  │     ├─ payments.py       /payments CRUD + /refund.
+│  │     ├─ templates.py      /templates CRUD + /{id}/fields list+delete (role-aware).
+│  │     ├─ fields.py         /fields CRUD, list by template.
+│  │     ├─ documents.py      /documents/upload, list, read, process, reprocess,
+│  │     │                    /extractions, /extractions/summary, update, delete, status.
+│  │     └─ extractions.py    /extractions CRUD, list by document.
+│  ├─ core/
+│  │  ├─ config.py            Pydantic Settings (DATABASE_URL, SECRET_KEY, ALGORITHM,
+│  │  │                       ACCESS_TOKEN_EXPIRE_MINUTES, UPLOAD_DIR, OpenAI, OCR DPI,
+│  │  │                       Google Vision quota project). Loads .env.
+│  │  ├─ enums.py             UserRole(str, Enum): USER/SUPER_ADMIN/BUSINESS_ADMIN/ENTERPRISE_ADMIN.
+│  │  ├─ jwt.py               create_access_token(sub, role?, client_id?), decode_token.
+│  │  ├─ security.py          pwd_context with ["pbkdf2_sha256","bcrypt"]. hash_password,
+│  │  │                       verify_password.
+│  │  ├─ permissions.py       ensure_user_can_use_template(db, user, template_id).
+│  │  └─ limits.py            ensure_client_can_add_user(db, client_id) — enforces
+│  │                          Plan.max_users.
+│  ├─ db/
+│  │  ├─ base.py              SQLAlchemy declarative Base.
+│  │  ├─ session.py           create_engine(settings.DATABASE_URL); SessionLocal sessionmaker.
+│  │  └─ deps.py              get_db() generator dependency.
+│  ├─ middlewares/
+│  │  └─ api_logging.py       APILoggingMiddleware (Starlette BaseHTTPMiddleware).
+│  │                          Stores method+path+status+request_body+client_id (from JWT)
+│  │                          in api_logs for every request, skipping /docs, /openapi.json, /redoc.
+│  ├─ models/                 SQLAlchemy ORM classes:
+│  │  ├─ __init__.py          Imports every model so Base.metadata is populated.
+│  │  ├─ client.py            Client (tenant) with api_key.
+│  │  ├─ user.py              User with role (native enum user_role).
+│  │  ├─ plan.py              Plan (monthly_price, max_users, can_manage_templates).
+│  │  ├─ subscription.py      Subscription (client_id, plan_id, status, dates).
+│  │  ├─ payment.py           Payment (client_id, subscription_id, status).
+│  │  ├─ template.py          Template (client_id nullable = global, is_global).
+│  │  ├─ field.py             Field (per-template field definition + description/label).
+│  │  ├─ document.py          Document (file_url, status, processed_at).
+│  │  ├─ extraction.py        Extraction (value_text, value_json JSONB, confidence).
+│  │  └─ api_log.py           ApiLog (endpoint, status_code, request/response JSONB).
+│  ├─ schemas/                Pydantic request/response models (validation & serialization):
+│  │  ├─ client.py, user.py, login.py, signup.py, plan.py, subscription.py,
+│  │  ├─ payment.py, template.py, field.py, document.py, document_process.py, extraction.py.
+│  ├─ crud/                   Thin data-access layer. No auth logic here (that's in routes/core).
+│  │  ├─ crud_client.py, crud_user.py, crud_plan.py, crud_subscription.py,
+│  │  ├─ crud_payment.py, crud_template.py, crud_field.py, crud_document.py,
+│  │  ├─ crud_extraction.py, crud_api_log.py.
+│  └─ services/               Domain services for the OCR → LLM pipeline:
+│     ├─ ocr.py               PDF/image → {"text", "pages": [...]} via Google Vision.
+│     ├─ text_cleanup.py      Regex-heavy OCR text cleanup (whitespace, punctuation, OCR artifacts).
+│     ├─ extraction_context.py Loads template + field definitions from DB for the LLM.
+│     ├─ llm_extraction.py    Builds messages, calls OpenAI, parses JSON, computes
+│     │                       per-field confidence (date/number/email/phone/text heuristics).
+│     └─ document_pipeline.py Orchestrates the full pipeline synchronously in the request.
+└─ scripts/                   Dev/debug utilities, NOT wired into the API:
+   ├─ ensure_db.py            Creates the Postgres database if missing.
+   ├─ fix_fields_columns.py   Adds label/description columns on fields (fallback for legacy DBs).
+   ├─ e2e_upload_file.py      End-to-end HTTP flow: signup → login → upload → process.
+   ├─ e2e_upload_lebanese_pdf.py  Builds an Arabic ID PDF in memory and runs the same flow.
+   ├─ run_pipeline_once.py    Runs run_document_processing() directly against the DB
+   │                          without hitting HTTP. Writes pipeline_last_result.json.
+   └─ pipeline_last_result.json Latest test output of run_pipeline_once.py.
+```
+
+File-by-file purpose (backend) — every file is listed here with what it exports and how
+it connects.
+
+- `backend/app/main.py`
+  - Purpose: boot the FastAPI app and wire middleware, CORS, OpenAPI security scheme, and
+    the single `api_router` that contains every HTTP route.
+  - Exports: `app`, `custom_openapi()`, `root()`.
+  - Connections: imports `app.api.router.api_router` and
+    `app.middlewares.api_logging.APILoggingMiddleware`.
+
+- `backend/app/api/router.py`
+  - Purpose: include every feature router in one place for `main.py`.
+  - Exports: `api_router`.
+  - Connections: imports the 9 route modules under `app.api.routes.*`.
+
+- `backend/app/api/deps.py`
+  - Purpose: centralized auth dependencies consumed by every protected route.
+  - Exports: `oauth2_scheme`, `get_current_user`, `require_superadmin`,
+    `require_template_management`.
+  - Connections: uses `app.core.jwt.decode_token`, `app.models.user.User`,
+    `app.core.enums.UserRole`, `app.crud.crud_subscription.get_active_subscription`.
+
+- `backend/app/api/routes/auth.py` — register/signup/login/logout (details below).
+- `backend/app/api/routes/users.py` — /users endpoints.
+- `backend/app/api/routes/clients.py` — /clients endpoints (superadmin).
+- `backend/app/api/routes/plans.py` — /plans endpoints.
+- `backend/app/api/routes/subscriptions.py` — /subscriptions endpoints.
+- `backend/app/api/routes/payments.py` — /payments endpoints.
+- `backend/app/api/routes/templates.py` — /templates endpoints, with is_global logic.
+- `backend/app/api/routes/fields.py` — /fields endpoints (per-template field defs).
+- `backend/app/api/routes/documents.py` — upload/process/extractions endpoints.
+- `backend/app/api/routes/extractions.py` — low-level extractions CRUD.
+
+- `backend/app/core/config.py`
+  - Purpose: single source of truth for runtime configuration, loaded from
+    `backend/.env` (via pydantic-settings + python-dotenv).
+  - Exports: `settings` (instance of `Settings`).
+  - Connections: imported everywhere that needs credentials or limits.
+
+- `backend/app/core/enums.py` — `UserRole` Enum used by User model, JWT payload, and deps.
+- `backend/app/core/jwt.py` — JWT encode/decode with `settings.SECRET_KEY` and `ALGORITHM`.
+- `backend/app/core/security.py` — password hashing context (pbkdf2_sha256 + legacy bcrypt).
+- `backend/app/core/permissions.py` — template-visibility guard used by `documents.py`.
+- `backend/app/core/limits.py` — `ensure_client_can_add_user`, called from `create_user`.
+
+- `backend/app/db/base.py` — `Base = declarative_base()`.
+- `backend/app/db/session.py` — `engine`, `SessionLocal`.
+- `backend/app/db/deps.py` — `get_db()` FastAPI dependency yielding a session.
+
+- `backend/app/middlewares/api_logging.py` — request/response logging middleware that
+  decodes the JWT (read-only) to associate the log row with a `client_id`.
+
+- `backend/app/models/*.py` — SQLAlchemy models (section 3 covers each column).
+
+- `backend/app/schemas/*.py` — Pydantic DTOs:
+  - `user.py`: `UserBase`, `UserCreate` (password min=8 max=72), `UserUpdate`,
+    `UserRoleUpdate`, `UserPasswordUpdate`, `UserOut`.
+  - `signup.py`: `SignupRequest` (Literal["business","enterprise"] client_type,
+    password min 8/max 72), `SignupResponse` bundling `ClientOut` + `UserOut`.
+  - `login.py`: `LoginBody` (EmailStr + password Field(min=1, max=256)).
+  - `client.py`: ClientBase / Create / Update / Out (exposes `api_key`).
+  - `plan.py`: Plan CRUD DTOs with all flags defaulted.
+  - `subscription.py`, `payment.py`: CRUD DTOs.
+  - `template.py`: TemplateBase with `is_global`, `client_id`; Update allows changing
+    `is_global` and `client_id` (superadmin only, enforced in route).
+  - `field.py`: `FieldCreate` (template_id, name, label, field_type, required,
+    description) + `FieldOut` adds `id`.
+  - `document.py`: `DocumentOut` (id, client_id, template_id, file_url, status, created_at).
+    `DocumentUpdate` for partial edits.
+  - `document_process.py`: `DocumentProcessOut` (wraps doc + task_id + status +
+    extractions_created).
+  - `extraction.py`: `ExtractionCreate/Update/Out` (value_text, value_json Any for JSONB,
+    confidence, created_at; Out adds `field_name`, `field_label` that are populated in
+    the route handler after loading).
+
+- `backend/app/crud/*.py` — each file is a thin module of functions that directly use
+  `Session`. No auth, no HTTP. Calling rules:
+  - `crud_user.py`: `_normalize_email` (lower+strip), `get_by_email` (case-insensitive),
+    `create_user` (optionally enforces plan limit), `authenticate`, role/password/email
+    updates, `delete_user`, `list_users`, `get_user`.
+  - `crud_client.py`: `generate_api_key` (`secrets.token_urlsafe(32)`), `create_client`,
+    list/get/delete/update.
+  - `crud_template.py`: `create_template`, `get_template`, `list_templates_for_user`
+    (role-aware), `update_template`, `delete_template`.
+  - `crud_field.py`: CRUD per template; `delete_fields_for_template`.
+  - `crud_document.py`: CRUD + `set_document_status` (sets `processed_at` when status
+    becomes `"done"`), `list_documents_for_user`, `delete_extractions_for_document`.
+  - `crud_extraction.py`: CRUD.
+  - `crud_plan.py`: CRUD + `list_active_plans`.
+  - `crud_subscription.py`: `get_active_subscription` (status=active),
+    `create_subscription`, `cancel_subscription`, `change_subscription_plan`.
+  - `crud_payment.py`: CRUD.
+  - `crud_api_log.py`: `create_api_log` (called by middleware).
+
+- `backend/app/services/*.py` — orchestrate the document intelligence pipeline. See
+  section 6 for the line-by-line trace.
+
+### 2.3 Frontend (`frontend/`)
+
+```
+frontend/
+├─ package.json               React 19, React Router 7, Stripe JS SDKs, Vite, Tailwind 4.
+├─ vite.config.js             Vite + @vitejs/plugin-react; dev server port 5173,
+│                              host=true so LAN devices reach it.
+├─ tailwind.config.js         Tailwind config.
+├─ .gitignore, README.md
+├─ public/ (static assets)
+└─ src/
+   ├─ main.jsx                ReactDOM root. Wraps <App/> in <AuthProvider/> and <StrictMode/>.
+   ├─ App.jsx                 Defines all routes. Uses <ProtectedRoute allowedRoles=[...]>
+   │                          to gate super/enterprise/business dashboards.
+   ├─ App.css, index.css      Global base styles.
+   ├─ assets/                 Static images (hero-illustration.png, vision.jpeg, ...).
+   ├─ context/
+   │  └─ AuthContext.jsx      Session state, JWT decoding, loginWithToken, logout,
+   │                          ROLE_HOME map, restoreSession on mount.
+   ├─ components/
+   │  ├─ navbar.jsx/.css      Public Navbar with scroll shadow + mobile menu.
+   │  ├─ SuperNav.jsx/.css    Heavy nav for super admin (search, theme toggle, profile
+   │  │                        dropdown, mega menus).
+   │  ├─ Footer.jsx/.css      Public marketing footer.
+   │  ├─ Hero.jsx/.css        Landing hero.
+   │  ├─ Features.jsx/.css    "Intelligent document processing" grid.
+   │  ├─ HowItWorks.jsx/.css  4-step workflow.
+   │  ├─ UseCases.jsx/.css    Industry use-case cards.
+   │  ├─ CTA.jsx/.css         Bottom call to action.
+   │  ├─ bg.jsx/.css          Decorative "soft morning mist" background wrapper.
+   │  ├─ ProtectedRoute.jsx   Outlet-based guard: redirects to /login if unauthenticated,
+   │  │                       to ROLE_HOME[role] if wrong role.
+   │  ├─ variables.css, global.css, Navbar.css, ...  shared CSS tokens.
+   ├─ pages/
+   │  ├─ public/              Unauthenticated marketing pages:
+   │  │  ├─ homepage.jsx              Composes Bg+Navbar+Hero+Features+HowItWorks+UseCases+CTA+Footer.
+   │  │  ├─ about.jsx                 Mission/security/vision/trust sections.
+   │  │  ├─ Pricing.jsx               Business $49 / Enterprise $99 cards linking to /signup.
+   │  │  ├─ Contact.jsx               Contact form (simulated submission, no backend call).
+   │  │  ├─ Signup.jsx                Animated dual plan card; posts to /auth/signup/business or
+   │  │  │                            /auth/signup/enterprise. Includes <Elements stripe={...}/>
+   │  │  │                            for UI only (publishable key placeholder).
+   │  │  └─ Login.jsx                 POST /auth/login; stores token via loginWithToken; redirects
+   │  │                               via getRoleHome(role).
+   │  ├─ super/               Super admin dashboards (placeholders):
+   │  │  ├─ Sdashboard.jsx, clients_plans.jsx, monitoring.jsx, templates_ai.jsx (+ .css).
+   │  ├─ enterprise/          Enterprise admin pages (placeholders):
+   │  │  ├─ Edashboard.jsx, template.jsx, api.jsx, profile.jsx (+ .css).
+   │  └─ business/            Business admin pages (placeholders):
+   │     ├─ B_dashboard.jsx, B_api.jsx, B_profile.jsx (+ .css).
+```
+
+Note on frontend "placeholder" pages: `B_dashboard`, `B_api`, `B_profile`, `EDashboard`,
+`enterprise/api`, `enterprise/profile`, `enterprise/template`, `Sdashboard`,
+`clients_plans`, `monitoring`, `templates_ai` currently render only a heading and a
+description string. They are wired into routing but not yet implemented as functional
+UIs.
+
+---------------------------------------------------------------------------------------
+
+## 3. Database Design & Schema
+
+The schema is defined in Python by SQLAlchemy 2.x models (`backend/app/models/*.py`) and
+materialized by the Alembic migrations under `backend/alembic/versions/`. The database
+is **PostgreSQL** (the migrations use Postgres-specific features: `JSONB` and a native
+`ENUM` type for the user role).
+
+### 3.1 Table `clients` (file: `app/models/client.py`)
+
+Purpose: represents a **tenant** / company. All per-tenant data (users, templates,
+documents, subscriptions, payments, logs) links back to a client row.
+
+| Column       | Type                       | Constraints                                 | Why this type / why this column |
+| ------------ | -------------------------- | ------------------------------------------- | ------------------------------- |
+| id           | INTEGER                    | PK, indexed                                 | INT autoincrement is enough for expected scale; cheap join key. |
+| name         | VARCHAR(255)               | NOT NULL, indexed                           | Display name. 255 chars is the legacy default for `VARCHAR` and is comfortably large for any company name. Indexed because it’s searched/listed. |
+| company_name | VARCHAR(255)               | nullable                                    | Some tenants give only one name; kept separate to allow legal company name later. |
+| email        | VARCHAR(255)               | nullable                                    | Billing contact email. Not unique because multiple clients can share an admin email. |
+| api_key      | VARCHAR(255)               | UNIQUE, indexed, nullable                   | Random token (`secrets.token_urlsafe(32)`) for server-to-server API calls. UNIQUE so a key identifies exactly one tenant; indexed for fast lookup. Kept nullable so legacy rows without an API key don’t break. |
+| created_at   | TIMESTAMPTZ                | default `now()`                             | Audit/analytics. `WITH TIME ZONE` because the app stores UTC and shows local time on the client side. |
+
+Relationships (enforced by SQLAlchemy `relationship(... cascade="all, delete-orphan")`):
+- `clients` 1 – N `users` (`users.client_id → clients.id`)
+- `clients` 1 – N `templates` (`templates.client_id → clients.id` — nullable for global templates)
+- `clients` 1 – N `documents`
+- `clients` 1 – N `subscriptions`
+- `clients` 1 – N `payments`
+- `clients` 1 – N `api_logs`
+
+### 3.2 Table `users` (file: `app/models/user.py`)
+
+Purpose: account rows. Holds login identity, hashed password, and role.
+
+| Column          | Type                           | Constraints                 | Why |
+| --------------- | ------------------------------ | --------------------------- | --- |
+| id              | INTEGER                        | PK, indexed                 | Surrogate key. |
+| email           | VARCHAR(255)                   | NOT NULL, UNIQUE, indexed   | Primary login identifier. UNIQUE to prevent duplicate accounts. Indexed because every login query filters by `lower(email)`. |
+| username        | VARCHAR(255)                   | nullable                    | Display name; optional. |
+| hashed_password | VARCHAR(255)                   | NOT NULL                    | Passlib output. Never stores plaintext. 255 chars is enough for `pbkdf2_sha256`/`bcrypt` digest strings. |
+| role            | ENUM user_role                 | NOT NULL, default `'user'`  | Postgres enum created by migration `e3b9c2a4d1f7` and renamed in `f1a2b3c4d5e6`. Values: `user`, `super_admin`, `business_admin`, `enterprise_admin`. Native enum is used (instead of VARCHAR) for integrity — only the 4 legal values are writable. |
+| client_id       | INTEGER                        | FK `clients.id`, indexed, nullable | Tenant link. Nullable because a `super_admin` may have no client. Indexed because every tenant-scoped query filters by it. |
+| created_at      | TIMESTAMPTZ                    | default `now()`             | Audit. |
+
+Why `email` is stored case-insensitively (not with a Postgres `CITEXT` column): the
+codebase normalizes via `lower(trim(email))` in `_normalize_email` and queries with
+`func.lower(User.email)`; doing that in SQLAlchemy is portable (the original Alembic
+migration was written for a generic `VARCHAR(50)` → `user_role` enum upgrade path on
+a non-CITEXT base).
+
+### 3.3 Table `plans` (file: `app/models/plan.py`)
+
+Purpose: subscription plan catalog. Controls pricing and feature entitlements.
+
+| Column                | Type         | Constraints           | Why |
+| --------------------- | ------------ | --------------------- | --- |
+| id                    | INTEGER      | PK                    | Key. |
+| name                  | VARCHAR(100) | NOT NULL              | "Business", "Enterprise". |
+| monthly_price         | INTEGER      | NOT NULL, default 0   | Money is stored as INTEGER (cents). Float/double are forbidden for money because of rounding; using an integer amount avoids that class of bug. |
+| max_users             | INTEGER      | NOT NULL, default 1   | Tenant seat cap. Enforced at `create_user` via `ensure_client_can_add_user`. |
+| allow_creation        | BOOLEAN      | default TRUE          | Whether the plan allows creating new resources. |
+| is_active             | BOOLEAN      | default TRUE          | Soft archive — `/plans` returns only active plans. |
+| created_at            | TIMESTAMPTZ  | default `now()`       | Audit. |
+| can_manage_templates  | BOOLEAN      | default FALSE, added in migration `d4c49f63235c` | Gate that decides whether an `ENTERPRISE_ADMIN` can add/edit/delete templates for their client. Default FALSE so upgrading to enterprise is an explicit decision. |
+
+Relationships: 1 – N to `subscriptions`.
+
+### 3.4 Table `subscriptions` (file: `app/models/subscription.py`)
+
+| Column          | Type         | Constraints                 | Why |
+| --------------- | ------------ | --------------------------- | --- |
+| id              | INTEGER      | PK                          | |
+| client_id       | INTEGER      | NOT NULL, FK `clients.id`, indexed | A subscription is owned by exactly one tenant. |
+| plan_id         | INTEGER      | NOT NULL, FK `plans.id`, indexed   | Which plan is active. |
+| status          | VARCHAR(50)  | NOT NULL, default `'active'`| State machine: `active`, `canceled`, `past_due`. Stored as VARCHAR instead of native enum to keep later additions easy without migrations. |
+| start_date      | TIMESTAMPTZ  | nullable                    | When the subscription began. |
+| end_date        | TIMESTAMPTZ  | nullable                    | Set when canceled. |
+| created_at      | TIMESTAMPTZ  | default `now()`             | Audit. |
+
+Uniqueness rule is enforced in the route (`/subscriptions` blocks creating a second
+active subscription for the same client), not by the DB. This was a time trade-off
+(see section 10).
+
+### 3.5 Table `payments` (file: `app/models/payment.py`)
+
+| Column           | Type        | Constraints                            | Why |
+| ---------------- | ----------- | -------------------------------------- | --- |
+| id               | INTEGER     | PK                                     | |
+| subscription_id  | INTEGER     | NOT NULL, FK `subscriptions.id`, indexed | Payment is tied to a subscription event. |
+| client_id        | INTEGER     | NOT NULL, FK `clients.id`, indexed     | Denormalized for quick tenant filtering. |
+| status           | VARCHAR(50) | NOT NULL, default `'pending'`          | `pending` / `paid` / `failed`. Mock payments are created automatically with `status='paid'` in `/subscriptions`. |
+| created_at       | TIMESTAMPTZ | default `now()`                        | Audit/sort. |
+
+### 3.6 Table `templates` (file: `app/models/template.py`)
+
+Purpose: a blueprint that defines what fields the LLM should extract from a document.
+Templates can be **global** (`is_global=TRUE`, `client_id IS NULL`) — everyone sees them
+— or **per-client**.
+
+| Column      | Type          | Constraints                         | Why |
+| ----------- | ------------- | ----------------------------------- | --- |
+| id          | INTEGER       | PK                                  | |
+| client_id   | INTEGER       | FK `clients.id`, indexed, nullable  | NULL when the template is global. Indexed because tenant filtering is the hot query. |
+| name        | VARCHAR(255)  | NOT NULL                            | Human name (e.g. "CV", "Invoice", "بطاقة هوية لبنانية"). |
+| description | TEXT          | nullable                            | Free text; injected into the LLM prompt as additional context. TEXT (no length limit) because descriptions can be multi-paragraph. |
+| is_global   | BOOLEAN       | default FALSE                       | Flag used in `list_templates_for_user`, `require_template_management` and `ensure_user_can_use_template`. |
+| created_at  | TIMESTAMPTZ   | default `now()`                     | Audit. |
+
+Relationships: N – 1 `client`; 1 – N `fields` (cascade delete); 1 – N `documents`.
+
+### 3.7 Table `fields` (file: `app/models/field.py`)
+
+Purpose: one row per extractable attribute of a template. Drives the prompt in
+`app/services/llm_extraction.py::_build_messages`.
+
+| Column      | Type         | Constraints                          | Why |
+| ----------- | ------------ | ------------------------------------ | --- |
+| id          | INTEGER      | PK                                   | |
+| template_id | INTEGER      | NOT NULL, FK `templates.id`, indexed | Parent template. |
+| name        | VARCHAR(255) | NOT NULL                             | Canonical JSON key the LLM must return (`invoice_number`, `full_name`, `الاسم`, ...). Kept as VARCHAR rather than an enum because it is data-driven. |
+| label       | VARCHAR(255) | nullable (added in migration `c2a1b3c4d5e6`) | Human-facing label shown on the document. Used to help the LLM identify where to look. |
+| description | TEXT         | nullable (added in migration `a1b2c3d4e5f6`) | Free-form guidance inserted into the prompt ("Return digits only if the card…"). |
+| field_type  | VARCHAR(50)  | nullable                             | Drives confidence scoring heuristics: `date`, `number`/`integer`/`currency`, `email`, `phone`, else `text`. |
+| required    | BOOLEAN      | default FALSE                        | If missing at extraction time, confidence becomes 0.0 (vs 0.1 for optional). |
+| created_at  | TIMESTAMPTZ  | default `now()`                      | Audit. |
+
+Relationships: N – 1 `template`; 1 – N `extractions` (cascade delete — deleting a field
+deletes its historical extraction rows too).
+
+### 3.8 Table `documents` (file: `app/models/document.py`)
+
+| Column       | Type          | Constraints                           | Why |
+| ------------ | ------------- | ------------------------------------- | --- |
+| id           | INTEGER       | PK                                    | |
+| client_id    | INTEGER       | NOT NULL, FK `clients.id`, indexed    | Tenant scoping. |
+| template_id  | INTEGER       | FK `templates.id`, indexed, nullable  | Nullable so that documents uploaded without a template can exist historically; processing endpoints refuse to run if it is NULL. |
+| file_url     | VARCHAR(2048) | nullable                              | Relative or absolute path to the uploaded file on disk. 2048 chars is URL-safe (RFC guidance). |
+| status       | VARCHAR(50)   | NOT NULL, default `'uploaded'`        | State machine: `uploaded` → `processing` → `done`/`failed`. String instead of enum for ease of evolution. |
+| created_at   | TIMESTAMPTZ   | default `now()`                       | Audit / ordering (`list_documents_for_user` orders by this). |
+| processed_at | TIMESTAMPTZ   | nullable                              | Populated by `set_document_status` when status becomes `done`. |
+
+Relationships: N – 1 `client`, N – 1 `template`, 1 – N `extractions` (cascade).
+
+### 3.9 Table `extractions` (file: `app/models/extraction.py`)
+
+| Column       | Type         | Constraints                            | Why |
+| ------------ | ------------ | -------------------------------------- | --- |
+| id           | INTEGER      | PK                                     | |
+| document_id  | INTEGER      | NOT NULL, FK `documents.id`, indexed   | Owning document. |
+| field_id     | INTEGER      | FK `fields.id`, indexed, nullable      | Usually the Field definition; nullable in case the LLM returns something not in the template schema. |
+| value_text   | TEXT         | nullable                               | String form of the extracted value. TEXT because it may be a long paragraph (e.g. CV summary, work_experience). |
+| value_json   | JSONB        | nullable                               | Structured value (list, dict, number) as returned by the LLM. JSONB so we can query/filter without reparsing. |
+| confidence   | FLOAT        | nullable                               | Output of `calculate_confidence(...)`: 0.0–1.0. Nullable because a legacy row might not have it. |
+| created_at   | TIMESTAMPTZ  | default `now()`                        | Audit. |
+
+### 3.10 Table `api_logs` (file: `app/models/api_log.py`)
+
+| Column            | Type          | Constraints                       | Why |
+| ----------------- | ------------- | --------------------------------- | --- |
+| id                | INTEGER       | PK                                | |
+| client_id         | INTEGER       | FK `clients.id`, indexed, nullable | Derived from the JWT if any; NULL for unauthenticated traffic. |
+| endpoint          | VARCHAR(1024) | NOT NULL                          | Stored as `"METHOD /path"` for easy grouping. |
+| status_code       | INTEGER       | nullable                          | HTTP status returned. |
+| request_payload   | JSONB         | nullable                          | Truncated JSON body (max 10 000 bytes) if method was POST/PUT/PATCH and the body parsed. |
+| response_payload  | JSONB         | nullable                          | Currently always NULL (see 10 — Trade-offs). |
+| created_at        | TIMESTAMPTZ   | default `now()`                   | Insert time. |
+
+### 3.11 Indexes (full list)
+
+Created by migration `9c7abaf1781f_create_initial_tables.py` and kept in sync:
+- `ix_clients_api_key` UNIQUE on `clients.api_key` — hot lookup when authenticating
+  server-to-server.
+- `ix_clients_id`, `ix_clients_name` — listing/search.
+- `ix_plans_id`.
+- `ix_users_email` UNIQUE — login by email.
+- `ix_users_id`, `ix_users_client_id` — tenant scoping.
+- `ix_api_logs_id`, `ix_api_logs_client_id` — tenant-scoped log fetches.
+- `ix_subscriptions_id`, `ix_subscriptions_client_id`, `ix_subscriptions_plan_id` —
+  lookups by tenant and by plan.
+- `ix_templates_id`, `ix_templates_client_id` — tenant-scoped listing.
+- `ix_documents_id`, `ix_documents_client_id`, `ix_documents_template_id` — tenant-
+  scoped listing + joining by template.
+- `ix_fields_id`, `ix_fields_template_id` — listing fields per template (done on every
+  pipeline run).
+- `ix_payments_id`, `ix_payments_client_id`, `ix_payments_subscription_id`.
+- `ix_extractions_id`, `ix_extractions_document_id`, `ix_extractions_field_id`.
+
+There is no full-text index; search on templates/documents is not a product feature yet.
+
+### 3.12 Triggers, stored procedures, views
+
+None. The only "server-side logic" is `server_default=func.now()` on `created_at`
+columns and the native `user_role` enum. Enum transitions happen in migrations:
+
+- `e3b9c2a4d1f7_user_role_enum.py` creates the type with values including spaces
+  (`'super admin'`, etc.), then normalizes all legacy `VARCHAR` role values, then runs
+  `ALTER TABLE users ALTER COLUMN role TYPE user_role USING role::user_role`.
+- `f1a2b3c4d5e6_user_role_enum_underscores.py` renames the enum values to use
+  underscores (`'super_admin'`, `'business_admin'`, `'enterprise_admin'`) so that the
+  Python `UserRole` enum values map 1-to-1.
+
+The seed migrations (`b7c8d9e0f1a2`, `e0f1a2b3c4d5`, `f0e1d2c3b4a5`, `g9f8e7d6c5b4`,
+`c8d9e0f1a2b3`) insert/delete rows in `templates` and `fields` using parameter-bound
+`sa.text(...)` queries. Each has a `_has_column(conn, table, column)` helper that
+checks `information_schema.columns` so the migrations are resilient to being run
+against older schemas (e.g. before `fields.label` or `fields.description` existed).
+
+### 3.13 Relationships summary
+
+```
+clients 1─┬─* users
+          ├─* templates  (template.client_id nullable ⇒ global)
+          ├─* documents ─* extractions ─1 fields ─1 templates
+          ├─* subscriptions ─1 plans
+          │                 └─* payments
+          └─* api_logs
+```
+
+Deletion cascades (ORM `cascade="all, delete-orphan"`):
+- Deleting a `client` removes its users, templates, documents, subscriptions, payments,
+  api_logs.
+- Deleting a `template` removes its fields (and cascade-deletes their extractions).
+- Deleting a `subscription` removes its payments.
+- Deleting a `document` removes its extractions.
+- Deleting a `field` removes its historical extractions.
+
+---------------------------------------------------------------------------------------
+
+## 4. Backend API Endpoints
+
+All endpoints are mounted by `backend/app/api/router.py` under the FastAPI root; no
+global prefix. Each router declares its own prefix (`/auth`, `/users`, `/clients`,
+`/templates`, `/fields`, `/documents`, `/extractions`, `/plans`, `/subscriptions`,
+`/payments`). Every protected route receives the current user via
+`Depends(get_current_user)` or one of the role-gating deps in `app/api/deps.py`.
+
+Request bodies are validated against the Pydantic schemas in `app/schemas/`. FastAPI
+returns a `422 Unprocessable Entity` with the field-level errors when validation fails.
+
+Error response format (FastAPI default): `{"detail": "<message>"}` or
+`{"detail": [{...validation errors...}]}`. The frontend's `Login.jsx` handles both.
+
+### 4.1 Auth (`/auth`) — `app/api/routes/auth.py`
+
+- **POST `/auth/register`** — *Admin-only user creation* (Create)
+  - Body: `UserCreate` (`email: EmailStr`, `password` min 8 / max 72, `username?`,
+    `role = user`, `client_id?`).
+  - Auth: `Depends(get_current_user)`.
+  - Flow: checks no duplicate via `get_by_email`; if caller is `SUPER_ADMIN` then
+    `payload.client_id` is required, otherwise caller's `client_id` is forced — a
+    non-superadmin cannot create a user in another tenant. Calls `create_user`, which
+    calls `ensure_client_can_add_user` to enforce `Plan.max_users`.
+  - Response: `UserOut`.
+
+- **POST `/auth/signup/business`** (Create)
+  - Body: `SignupRequest` with `client_type = "business"`.
+  - Auth: none.
+  - Flow: `_validate_client_type(payload, "business")` → `_signup_with_role(...,
+    UserRole.BUSINESS_ADMIN, db)`. Inside `_signup_with_role`:
+    1. `get_by_email` → 400 if duplicate.
+    2. `create_client(db, name=..., company_name=..., email=..., commit=False)` —
+       inserts a tenant row.
+    3. `create_user(db, ..., role=BUSINESS_ADMIN, client_id=client.id,
+       enforce_limits=False, commit=False)` — creates the admin user.
+    4. `db.commit()`, `db.refresh(client)`, `db.refresh(user)`.
+    5. On any exception: `db.rollback()` and raise 500.
+  - Response (201): `SignupResponse` with `client` + `user`.
+
+- **POST `/auth/signup/enterprise`** — same, with `UserRole.ENTERPRISE_ADMIN`.
+
+- **POST `/auth/login`** (Read) — used as the token URL.
+  - Body: `LoginBody` (`EmailStr`, `password` 1–256 chars).
+  - Flow: `authenticate(db, email=str(payload.email), password=payload.password)`:
+    1. `get_by_email` does case-insensitive match (`lower(email)`).
+    2. `verify_password` against the stored passlib hash.
+    3. Returns `None` on either failure, the route returns 401 `"Invalid credentials"`.
+  - On success: `create_access_token(subject=str(user.id), role=..., client_id=...)`.
+    The JWT has `sub`, `role`, `client_id`, `exp` claims.
+  - Response: `{"access_token": "<jwt>", "token_type": "bearer"}`.
+
+- **POST `/auth/logout`**
+  - Auth: `Depends(get_current_user)`.
+  - Flow: stateless — just asks the client to drop its token.
+  - Response: `{"detail": "Logged out"}`.
+
+### 4.2 Users (`/users`) — `app/api/routes/users.py`
+
+- **GET `/users/me`** (Read) — any authenticated user. Returns `UserOut`.
+- **GET `/users`** (Read) — `require_superadmin`. Returns `list[UserOut]`.
+- **GET `/users/{user_id}`** (Read) — self or superadmin.
+- **PUT `/users/{user_id}`** (Update) — superadmin only. Body `UserUpdate` (email/username).
+- **PUT `/users/{user_id}/role`** (Update) — superadmin only. Body `UserRoleUpdate`.
+- **PUT `/users/{user_id}/password`** (Update) — superadmin only. Body
+  `UserPasswordUpdate`. `update_user_password` re-hashes via `hash_password`.
+- **DELETE `/users/{user_id}`** — superadmin only.
+
+### 4.3 Clients (`/clients`) — `app/api/routes/clients.py`
+
+All endpoints require `require_superadmin`.
+- `POST /clients` (Create) — body `ClientCreate`.
+- `GET /clients` (Read all).
+- `GET /clients/{id}` (Read one).
+- `PUT /clients/{id}` (Update) — body `ClientUpdate`.
+- `DELETE /clients/{id}` (Delete) — cascade drops tenant data.
+
+### 4.4 Plans (`/plans`) — `app/api/routes/plans.py`
+
+- `GET /plans` — any authenticated user, returns only `is_active=true`.
+- `GET /plans/all` — superadmin; returns every plan.
+- `GET /plans/{id}` — any authenticated.
+- `POST /plans` — superadmin. Body `PlanCreate`.
+- `PUT /plans/{id}` — superadmin. Body `PlanUpdate`.
+- `DELETE /plans/{id}` — superadmin.
+
+### 4.5 Subscriptions (`/subscriptions`) — `app/api/routes/subscriptions.py`
+
+- `GET /subscriptions/me` — current tenant's active subscription (404 if none).
+- `POST /subscriptions` — superadmin only. Body `SubscriptionCreate`. Rejects if plan
+  inactive or tenant already has an active subscription. Creates a mock `Payment` row
+  with `status="paid"`.
+- `POST /subscriptions/{id}/cancel` — superadmin. Sets `status='canceled'`, `end_date=now()`.
+- `POST /subscriptions/change-plan` — superadmin. `client_id`/`new_plan_id` query params.
+  Cancels current active subscription, creates a new one, creates a paid `Payment`.
+- `GET /subscriptions/all` — superadmin.
+
+### 4.6 Payments (`/payments`) — `app/api/routes/payments.py`
+
+- `GET /payments/me` — current tenant’s payments (denies superadmin because they have no tenant).
+- `GET /payments/client/{client_id}` — superadmin only.
+- `GET /payments/{payment_id}` — superadmin or same-tenant.
+- `POST /payments` (Create) — superadmin or same-tenant.
+- `PUT /payments/{id}` — superadmin or same-tenant.
+- `DELETE /payments/{id}` — superadmin or same-tenant.
+- `POST /payments/{id}/refund` — currently implemented as a hard delete (trade-off, see 10).
+
+### 4.7 Templates (`/templates`) — `app/api/routes/templates.py`
+
+- `POST /templates` (Create) — `require_template_management` (superadmin OR enterprise
+  admin with `Plan.can_manage_templates = TRUE`). Extra rules:
+  - If `payload.is_global=true`: caller must be superadmin AND `client_id` must be None.
+  - Otherwise `client_id` is required and, if caller is `ENTERPRISE_ADMIN`, must equal
+    the caller’s `client_id`.
+- `GET /templates` (Read all) — any authenticated; result is filtered by
+  `list_templates_for_user`:
+  - `BUSINESS_ADMIN` and `user` with `BUSINESS_ADMIN`-like plan see only global.
+  - `ENTERPRISE_ADMIN`/`USER` with a `client_id` see global + their client.
+  - `SUPER_ADMIN` (no `client_id`) sees everything.
+- `GET /templates/{id}` — same rules but for a single template.
+- `PUT /templates/{id}` — `require_template_management`. Flipping `is_global=true` is
+  superadmin-only; when flipping, `client_id` is cleared to None.
+- `DELETE /templates/{id}` — `require_template_management` (enterprise cannot delete
+  global or other tenants’).
+- `GET /templates/{id}/fields` — list fields. Enforces same role-aware visibility.
+- `DELETE /templates/{id}/fields` — delete all fields in the template. Enterprise only
+  for own non-global templates.
+
+### 4.8 Fields (`/fields`) — `app/api/routes/fields.py`
+
+- `POST /fields` — `require_template_management`. Body `FieldCreate`. Checks that the
+  template exists and — for enterprise admins — that the template is neither global nor
+  foreign.
+- `GET /fields/template/{template_id}` — list fields with the same role rules as
+  templates.
+- `GET /fields/{field_id}` — read single, role-gated.
+- `PUT /fields/{field_id}` — same rules as create.
+- `DELETE /fields/{field_id}` — same rules.
+
+### 4.9 Documents (`/documents`) — `app/api/routes/documents.py`
+
+- **POST `/documents/upload`** (Create)
+  - Auth: `get_current_user`.
+  - Form fields: `template_id: int` (required), `client_id: int | None` (required for
+    superadmin), `file: UploadFile`.
+  - Flow:
+    1. Resolve `final_client_id`: superadmin needs `client_id` in the form; everyone
+       else must have `user.client_id`.
+    2. `ensure_user_can_use_template(db, user, template_id)` — 403 if the template is
+       not usable for this user's plan/tenant.
+    3. `os.makedirs(settings.UPLOAD_DIR, exist_ok=True)`.
+    4. Sanitize the filename: keep only the extension, generate `uuid4().hex + ext` so
+       that two users cannot collide and the original filename (which could be
+       path-traversal) is discarded.
+    5. Write the file bytes to `UPLOAD_DIR/<uuid>.<ext>`.
+    6. `create_document(db, client_id=final_client_id, template_id=..., file_url=save_path)`
+       inserts a `documents` row with `status="uploaded"`.
+  - Response: `DocumentOut`.
+
+- **GET `/documents`** — list documents visible to the caller (tenant filter).
+- **GET `/documents/{id}`** — read one; 403 if wrong tenant.
+- **POST `/documents/{id}/process`** (Update + side effects)
+  - Auth: `get_current_user` + tenant check.
+  - Flow:
+    1. Require `doc.status not in ("processing", "done")`.
+    2. Require `doc.template_id is not None`.
+    3. `set_document_status(db, doc, "processing")`.
+    4. `run_document_processing(db, doc.id)` — see section 6 for the deep trace. Raises
+       `ValueError` → 400, anything else → 502.
+    5. On success: return `{"document": <DocumentOut>, "task_id": None,
+       "status": "done", "extractions_created": <int>}`.
+- **PUT `/documents/{id}/reprocess`** — same as process but without the `"done"` guard,
+  so callers can re-run extraction.
+- **GET `/documents/{id}/extractions`** — list `ExtractionOut` with `field_name` and
+  `field_label` attached in memory from `ex.field`.
+- **GET `/documents/{id}/extractions/summary`** — flat `{field_name: value}` JSON.
+- **DELETE `/documents/{id}`** — deletes extractions, removes the file from disk if it
+  exists (`os.remove(doc.file_url)`), then deletes the row.
+- **PUT `/documents/{id}`** — partial update via `DocumentUpdate`.
+- **PUT `/documents/{id}/status`** — legacy path that takes `status` as a form field.
+
+### 4.10 Extractions (`/extractions`) — `app/api/routes/extractions.py`
+
+- `GET /extractions/document/{document_id}` — list, tenant-gated.
+- `GET /extractions/{id}` — read one.
+- `POST /extractions` — body `ExtractionCreate` (manually create one).
+- `PUT /extractions/{id}` — body `ExtractionUpdate`.
+- `DELETE /extractions/{id}`.
+
+### 4.11 Where auth/authorization is checked
+
+| Check                         | File                                                  | Approx location |
+| ----------------------------- | ----------------------------------------------------- | --------------- |
+| Token parsing + user lookup   | `app/api/deps.py` → `get_current_user` (OAuth2PasswordBearer at line 11) | lines 14–29 |
+| Superadmin gate               | `app/api/deps.py` → `require_superadmin`              | lines 32–35 |
+| Plan-based template gate      | `app/api/deps.py` → `require_template_management`     | lines 38–60 |
+| Per-template visibility gate  | `app/core/permissions.py` → `ensure_user_can_use_template` | lines 7–30  |
+| Per-tenant resource filter    | `app/crud/crud_template.py` → `list_templates_for_user` (15–29), `app/crud/crud_document.py` → `list_documents_for_user` (23–32) | as shown |
+| Plan-based seat limit         | `app/core/limits.py` → `ensure_client_can_add_user`   | lines 9–30 |
+| Route-level tenant checks     | Every `documents.py`/`extractions.py`/`payments.py` handler compares `user.client_id` to the resource `client_id` | throughout |
+
+---------------------------------------------------------------------------------------
+
+## 5. Security Measures
+
+### 5.1 Password hashing
+- File: `app/core/security.py`.
+- Code: `pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")`.
+- `hash_password(password)` runs Passlib with `pbkdf2_sha256` (default scheme).
+- `verify_password(password, hashed)` verifies against either scheme (legacy bcrypt hashes
+  still validate). `deprecated="auto"` flags legacy hashes for optional rehash, but the
+  codebase currently doesn’t auto-upgrade on login — a known trade-off (section 10).
+- Why `pbkdf2_sha256` default: pure-Python, no native dependency issues on Windows,
+  tunable iteration count, widely reviewed. Bcrypt retained for legacy verification.
+
+### 5.2 JWT authentication
+- File: `app/core/jwt.py`.
+- `create_access_token(subject, role?, client_id?)` sets `exp = now(UTC) + minutes` with
+  `settings.ACCESS_TOKEN_EXPIRE_MINUTES` (default 60), encodes with `settings.SECRET_KEY`
+  using `settings.ALGORITHM` (default `HS256`).
+- `decode_token(token)` uses `jose.jwt.decode`, which verifies signature + expiration.
+- Transport: `OAuth2PasswordBearer(tokenUrl="/auth/login")` (`app/api/deps.py`). Every
+  protected route has `Depends(get_current_user)` so an invalid token returns `401
+  Invalid or expired token`.
+
+### 5.3 CORS
+- File: `app/main.py`.
+- Explicit allowlist: `http://localhost:5173`, `http://127.0.0.1:5173`,
+  `http://localhost:5174`, `http://127.0.0.1:8000`.
+- Dev regex additionally allows `localhost`, `127.0.0.1`, and private LAN
+  `192.168.x.x` (any port) — needed so the dev server can be reached from a phone on
+  the same network for mobile demos.
+- `allow_credentials=True`, `allow_methods=["*"]`, `allow_headers=["*"]`.
+
+### 5.4 Input validation / type safety
+- Every request body is a Pydantic model (`app/schemas/`). For example:
+  - `UserCreate.password: Field(min_length=8, max_length=72)` — length caps prevent
+    DoS on passlib (bcrypt’s 72-byte input limit is respected). Emails use `EmailStr`
+    so RFC-invalid emails are rejected early.
+  - `LoginBody`: `ConfigDict(extra="ignore")`, password max 256 so clients can’t
+    submit pathological inputs.
+  - `FieldCreate` / `TemplateCreate` coerce all parameters.
+- FastAPI returns 422 + field error list on violation.
+
+### 5.5 SQL injection prevention
+- All database access goes through SQLAlchemy ORM, which bind-parameterizes.
+- The few places that use raw SQL (Alembic migrations and the two script files) all use
+  `sa.text("... :name")` with dict params (`{"name": LB_TEMPLATE_NAME}`). No string
+  interpolation into SQL.
+- `backend/scripts/ensure_db.py` uses `cur.execute(sql, (param,))` with positional
+  parameters; the only interpolated value is the database name for `CREATE DATABASE`,
+  which is unavoidable (DDL can’t be parameterized) and is fed from the trusted
+  `settings.DATABASE_URL`.
+
+### 5.6 File upload hardening
+- File: `app/api/routes/documents.py::upload_document`.
+- Original filename is discarded. Only the extension is preserved:
+  ```python
+  ext = os.path.splitext(file.filename)[1].lower()
+  safe_name = f"{uuid.uuid4().hex}{ext}"
+  save_path = os.path.join(settings.UPLOAD_DIR, safe_name)
+  ```
+- This defeats directory traversal (`../../etc/passwd`) and name collision.
+- Files are saved under `settings.UPLOAD_DIR` (default `uploads/`, gitignored).
+
+### 5.7 OCR path hardening
+- `app/services/ocr.py::_resolve_file_path(file_url)` refuses empty paths, and for
+  absolute paths it also tries a fallback to `backend/uploads/<basename>` so that moving
+  the project doesn't leak absolute host paths.
+
+### 5.8 Tenant isolation (authorization)
+- Every read/write route that touches tenant data does an equality check
+  `doc.client_id == user.client_id` (or equivalent). `SUPER_ADMIN` is the only role
+  that bypasses it. See lines 81–83, 100–101, 140–142, 166–168, 191–193, 212–214,
+  230–232, 246–248 of `app/api/routes/documents.py` — identical pattern across
+  `extractions.py`, `payments.py`, `subscriptions.py`.
+- Template visibility is centralized in `ensure_user_can_use_template` and
+  `list_templates_for_user`.
+
+### 5.9 Role enforcement
+- `require_superadmin` and `require_template_management` are FastAPI dependencies so
+  they run *before* the route body executes (FastAPI’s dependency resolution).
+- Role comes from the JWT (not query params), so spoofing requires breaking JWT.
+
+### 5.10 XSS / CSRF
+- XSS: no server-side HTML rendering; responses are JSON. React auto-escapes interpolated
+  strings, and the frontend never uses `dangerouslySetInnerHTML` on user input.
+- CSRF: stateless JWT in `Authorization: Bearer <token>` header (not cookies). Browsers
+  don’t auto-attach bearer headers cross-origin, so CSRF is a non-issue for this auth
+  model.
+
+### 5.11 Request logging / auditing
+- `app/middlewares/api_logging.py::APILoggingMiddleware` reads the body (max 10 000
+  bytes), attempts JSON decode, and inserts an `api_logs` row with method+path,
+  `status_code`, `client_id` (from JWT if present), `request_payload`. It never blocks
+  the response on logging errors (`except Exception: db.rollback() ... finally db.close()`).
+
+### 5.12 Secret management
+- Secrets are pulled from `.env` via pydantic-settings. None are hard-coded except the
+  placeholder `SECRET_KEY="CHANGE_ME"` default — which is a known trade-off for ease of
+  local dev; production is expected to override it in the environment.
+
+### 5.13 Environment variables (security-relevant)
+
+| Variable                        | Purpose                                                         | Consumed by                   |
+| ------------------------------- | --------------------------------------------------------------- | ----------------------------- |
+| DATABASE_URL                    | Postgres DSN used by SessionLocal and Alembic                   | `core/config.py`              |
+| SECRET_KEY                      | HMAC key for JWT signing/verification                           | `core/jwt.py`                 |
+| ALGORITHM                       | JWT algorithm; default `HS256`                                  | `core/jwt.py`                 |
+| ACCESS_TOKEN_EXPIRE_MINUTES     | JWT lifetime in minutes; default 60                             | `core/jwt.py`                 |
+| UPLOAD_DIR                      | Filesystem directory for stored uploads                         | `api/routes/documents.py`, `services/ocr.py` |
+| OPENAI_API_KEY                  | Auth for OpenAI Chat API                                        | `services/llm_extraction.py`  |
+| OPENAI_MODEL                    | Model name (default `gpt-5-nano`)                                | `services/llm_extraction.py`  |
+| GOOGLE_APPLICATION_CREDENTIALS  | Path to service account JSON (read indirectly by google client) | loaded via `load_dotenv` in `core/config.py` |
+| GOOGLE_VISION_QUOTA_PROJECT_ID  | Quota/billing project override for Vision client                | `services/ocr.py`             |
+| PDF_OCR_DPI                     | DPI used when rasterizing PDF pages                             | `services/ocr.py`             |
+| PDF_EMBEDDED_MIN_CHARS_TO_SKIP_OCR | Threshold for skipping Vision if text is embedded            | `services/ocr.py`             |
+| AUTODOC_OCR_MAX_IMAGE_EDGE      | Hard cap on image edge in pixels before OCR (OOM guard)         | `services/ocr.py`             |
+| CELERY_BROKER_URL / CELERY_RESULT_BACKEND | Reserved for future async; not currently consumed      | `core/config.py`              |
+
+### 5.14 Authentication & authorization flow — login to protected route
+
+1. User submits `{email, password}` to `POST /auth/login` (`routes/auth.py:110`).
+2. `authenticate(db, email, password)` (`crud_user.py:63`):
+   - `get_by_email` uses `or_(func.lower(User.email) == normalized,
+     func.lower(func.trim(User.email)) == normalized)` → returns the row if found.
+   - `verify_password(password, user.hashed_password)` uses passlib (`security.py:12`).
+3. On success, the route calls `create_access_token` (`core/jwt.py:6`) and returns
+   `{"access_token": ..., "token_type": "bearer"}`.
+4. Frontend stores the token in `localStorage` under `autodoc_access_token`
+   (`AuthContext.jsx:3`).
+5. For each protected request, the frontend (not shown everywhere in code yet; the
+   marketing pages don’t call protected endpoints) is expected to send
+   `Authorization: Bearer <token>`.
+6. FastAPI routes declared with `Depends(get_current_user)` enter
+   `app/api/deps.py:14`:
+   - `oauth2_scheme(...)` extracts the bearer token from the `Authorization` header.
+   - `decode_token` verifies signature + exp; on any failure → 401.
+   - Loads `User` by `int(payload["sub"])`.
+7. If the route uses `require_superadmin` or `require_template_management`, the extra
+   checks run.
+8. Route body executes; returns JSON. Middleware logs the request.
+
+---------------------------------------------------------------------------------------
+
+## 6. End-to-End Pipeline (Step-by-Step)
+
+The trace below follows the single most important user action in the app:
+
+> "A business admin uploads a PDF, runs extraction, and sees the results."
+
+### Step 1 — UI click handler (frontend)
+
+- File: `frontend/src/pages/public/Signup.jsx` (if signing up) or the user’s
+  business/enterprise dashboard (placeholder today). In the actual E2E automated test
+  (`backend/scripts/e2e_upload_lebanese_pdf.py`), the flow is equivalent:
+  1. POST `/auth/signup/business` with `{organization_name, company_name, full_name,
+     email, password, client_type: "business"}`.
+  2. POST `/auth/login` with `{email, password}` → stores `access_token`.
+  3. GET `/templates` to list visible templates and pick one (e.g. the Arabic LB ID).
+  4. POST `/documents/upload` multipart with `template_id` and `file`.
+
+### Step 2 — Login handler (frontend)
+
+- File: `frontend/src/pages/public/Login.jsx`, `handleSubmit` (lines 33–89).
+  - Fetch to `${API_BASE_URL}/auth/login` with `{email, password}`.
+  - On HTTP 200: `loginWithToken(token)` → `AuthContext.jsx:71`.
+  - `loginWithToken` decodes the JWT payload locally (`decodeToken` + `getSessionFromToken`),
+    stores the token under `autodoc_access_token`, sets the context `session`.
+  - `navigate(getRoleHome(session.role), { replace: true })` — `ROLE_HOME` maps roles
+    to dashboards.
+
+### Step 3 — Backend login route
+
+- File: `backend/app/api/routes/auth.py:110`:
+  - `payload: LoginBody` runs Pydantic validation (EmailStr + password length).
+  - `authenticate(...)` (`crud_user.py:63`) → passlib verify → returns `User`.
+  - `create_access_token(sub=str(user.id), role=..., client_id=...)`.
+
+### Step 4 — Upload request (frontend → backend)
+
+- Frontend (once built) will POST multipart/form-data to `/documents/upload` with the
+  JWT in `Authorization: Bearer <token>`.
+- Backend middleware chain runs in order:
+  1. `APILoggingMiddleware.dispatch` (`middlewares/api_logging.py:18`): reads body (if
+     JSON), decodes JWT for `client_id`, calls the route, then inserts an `api_logs` row
+     with the final status code.
+  2. `CORSMiddleware`: validates Origin / adds headers.
+  3. FastAPI routing resolves `POST /documents/upload` to
+     `routes/documents.py:30::upload_document`.
+
+### Step 5 — Upload handler (backend)
+
+- `routes/documents.py:30`:
+  1. FastAPI evaluates deps: `get_db()` yields a Session, `get_current_user(...)` parses
+     the JWT and loads the User.
+  2. `user.role` checked; `client_id` derived.
+  3. `ensure_user_can_use_template(db, user, template_id)` — 403 if template is not
+     permitted (e.g. business trying to use a tenant-only template).
+  4. UUID filename generated; file written to `uploads/<uuid>.<ext>`.
+  5. `create_document(db, client_id, template_id, file_url)` inserts a `documents` row
+     with `status="uploaded"`.
+  6. Returns `DocumentOut`.
+
+### Step 6 — Process request
+
+- Frontend posts to `/documents/{id}/process`.
+- `routes/documents.py:88::process_document`:
+  1. `get_document(db, id)` → load or 404.
+  2. Tenant check.
+  3. Refuses if already `processing` or `done`.
+  4. `set_document_status(db, doc, "processing")` updates the row and commits.
+  5. Calls `run_document_processing(db, doc.id)` (`services/document_pipeline.py:32`).
+  6. If `ValueError`: 400; any other exception: 502 (and `set_document_status(..., "failed")`
+     was already called inside the pipeline’s except block).
+  7. Reloads the doc and returns `DocumentProcessOut`.
+
+### Step 7 — The pipeline internals (`services/document_pipeline.py:32::run_document_processing`)
+
+1. `get_document(db, document_id)` — 2nd load (session boundary).
+2. `delete_extractions_for_document(db, doc.id)` — wipe any stale rows (useful for
+   reprocessing).
+3. `get_extraction_context(db, document_id)` (`services/extraction_context.py:20`):
+   - Loads `Document`, `Template`, and all `Field` rows.
+   - Returns `{template_id, template_name, template_description, fields: [...]}` where
+     each field has `{id, name, label, field_type, description, required}`.
+4. `get_text_and_structured_ocr_from_pdf(doc.file_url)` (`services/ocr.py:235`):
+   a. `_resolve_file_path(file_url)` — supports absolute, relative, or
+      `app/uploads/...` paths.
+   b. `_open_document_for_ocr(file_path)`:
+      - If extension is `.pdf`, open as PDF with PyMuPDF.
+      - Otherwise, try PyMuPDF (works for many PNG/JPEG). If 0 pages or error, convert
+        via PIL (`_image_file_to_temp_pdf`): open with Pillow → `_pil_to_rgb` (flatten
+        transparency) → `_downscale_pil_for_ocr` (cap largest edge at
+        `AUTODOC_OCR_MAX_IMAGE_EDGE`, default 2400 px) → save as PNG, then insert into
+        a fresh `fitz.Document` and save to a temp `.pdf`.
+   c. For each page:
+      - `page.get_text()` — if the embedded text length ≥
+        `PDF_EMBEDDED_MIN_CHARS_TO_SKIP_OCR` (40), skip Vision and use the embedded
+        text directly (fast path for text PDFs).
+      - Otherwise, `page.get_pixmap(dpi=PDF_OCR_DPI=300)` → PNG bytes → PIL → downscale
+        → `_ocr_image_google` → Google Cloud Vision `document_text_detection`.
+      - Vision response is parsed: `_google_annotation_to_lines` walks
+        `pages[].blocks[].paragraphs[].words[].symbols[]` to build line-level objects
+        `{text, confidence}` where confidence is the average of word confidences.
+   d. Returns `{"text": full_text, "pages": [{page_index, source, lines: [...]}, ...]}`.
+5. `clean_ocr_text(ocr_text)` (`services/text_cleanup.py:172`):
+   - `_normalize_line_breaks` — unify \r\n, \r, \n, collapse 3+ newlines to 2.
+   - `_normalize_whitespace` — single space for multiple spaces/tabs.
+   - `_remove_non_printable` — keep printable + `\n` + `\t`, drop Unicode category "C".
+   - `_fix_common_ocr_character_errors` — merges broken digits (including Eastern-Arabic
+     digits U+0660..U+0669), fixes stray `|~\``, tidies punctuation spacing, joins
+     broken currency.
+   - `_fix_grammar_and_spacing_errors` — adds missing space after punctuation, uppercase
+     after sentence end, fixes hyphenated words.
+   - `_remove_ocr_artifacts` — drops 3+ dashes/underscores, isolated symbols, excessive dots.
+   - `_strip_whitespace` — trim each line and the whole blob.
+6. `extract_with_llm(cleaned_text, context)` (`services/llm_extraction.py:70`):
+   - Raises if `OPENAI_API_KEY` missing.
+   - `_build_messages` composes:
+     - system: "You are an expert at extracting structured data from documents..."
+     - user: lists every field as `- name (type) (required): description`, then includes
+       the full cleaned text between `---` markers, asking for a raw JSON object.
+   - `client.chat.completions.create(model=settings.OPENAI_MODEL, messages=messages)`.
+   - Catches `openai.RateLimitError`, `AuthenticationError`, `APIError` and converts
+     them into `ValueError` (so the route maps them to 400/502).
+   - `_parse_json_from_response` strips ```json ``` fences if present and runs
+     `json.loads`. Returns the dict.
+7. `calculate_confidence(extraction_result, context)` (`llm_extraction.py:331`):
+   - For each field in context: if value is empty → 0.0 (required) or 0.1 (optional).
+     Else detect ambiguity (`?`, "maybe", "N/A", very short, `A or B`) → 0.4.
+     Else `_validate_field_by_type(value, field_type)`:
+     - `date`: regex matches, year sanity check, 0.6–0.9.
+     - `number`/`currency`/etc.: cleans symbols, accepts int/decimal/commas, 0.9.
+     - `email`: basic regex, 0.9; `@` but invalid → 0.4.
+     - `phone`: 10+ digits allowing formatting, 0.85–0.9.
+     - `text`/unknown: 0.85 if non-empty, else 0.
+8. `detect_low_confidence_fields(confidence_dict, threshold=0.5)` — logged as a warning.
+9. Loop over each field in the template:
+   - `value = extraction_result.get(field_name)`, `confidence =
+     confidence_dict.get(field_name, 0.5)`.
+   - `create_extraction(db, document_id=doc.id, field_id=field.id, value_text=...,
+     value_json=value, confidence=confidence)` — persists one Extraction row per field.
+10. `set_document_status(db, doc, "done")` — sets `doc.processed_at = datetime.utcnow()`.
+11. On any exception inside the try, `set_document_status(db, doc, "failed")` is called
+    and the exception is re-raised.
+12. Returns the number of extractions created (int).
+
+### Step 8 — Response to the frontend
+
+- The route returns `DocumentProcessOut` (includes the full updated `DocumentOut`,
+  `task_id=None`, `status="done"`, `extractions_created=<n>`).
+- Frontend would then call `/documents/{id}/extractions/summary` for a flat dict or
+  `/documents/{id}/extractions` for the list + metadata.
+
+### Step 9 — Middleware post-processing
+
+- Back in `APILoggingMiddleware.dispatch`, after `call_next` returns, the row is
+  inserted into `api_logs` with `status_code=200`, `client_id` from the JWT, and the
+  initial body payload.
+
+### Step 10 — Frontend state update
+
+- For the current marketing site: the login page flips `session` in the `AuthProvider`
+  and `navigate()`s. The dashboards are placeholders, so there is no live list refresh
+  yet; the product requires implementing API calls in `B_api.jsx` etc. (see section 10).
+
+---------------------------------------------------------------------------------------
+
+## 7. Frontend Logic Breakdown
+
+### 7.1 State management
+- **Global auth**: React Context in `src/context/AuthContext.jsx`. Exposes
+  `{session, role, token, isAuthenticated, loading, loginWithToken, logout,
+  restoreSession}`. Context is chosen (not Redux/Zustand) because there is only one
+  piece of cross-cutting state — the session — and React Context is enough.
+- **Local page state**: plain `useState`. For example, `Login.jsx` manages
+  `{formData, showPassword, loadingForm, error}`. `Signup.jsx` also manages a
+  `currentPlan` toggle synced to the URL query param.
+- **UI global state**: `SuperNav.jsx` keeps local state for `openMega`, `isMobileOpen`,
+  `theme` (persisted to `localStorage` as `"theme"`), `isProfileOpen`, and scroll-based
+  visibility flags.
+
+### 7.2 Routing
+Defined in `src/App.jsx` via `react-router-dom` v7:
+
+Public routes:
+- `/` → `pages/public/homepage`
+- `/about` → `pages/public/about`
+- `/pricing` → `pages/public/Pricing`
+- `/contact` → `pages/public/Contact`
+- `/signup` → `pages/public/Signup`
+- `/login` → `pages/public/Login`
+
+Protected routes (via `<ProtectedRoute allowedRoles=[...]>`):
+- `super_admin` → `/super`, `/super/clients-plans`, `/super/templates-ai`,
+  `/super/monitoring`.
+- `enterprise_admin` → `/enterprise`, `/enterprise/template`, `/enterprise/api`,
+  `/enterprise/profile`.
+- `business_admin` + `user` → `/business`, `/business/api`, `/business/profile`.
+
+Route guard (`components/ProtectedRoute.jsx`):
+```jsx
+if (loading) return null;
+if (!isAuthenticated) return <Navigate to="/login" replace state={{from}}/>;
+if (allowedRoles?.length && !allowedRoles.includes(role))
+  return <Navigate to={getRoleHome(role)} replace />;
+return <Outlet />;
+```
+
+### 7.3 API integration
+- No dedicated client module yet. Pages use `fetch` directly with
+  `API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'`.
+- Example (`Login.jsx:46`):
+  ```js
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: formData.email.trim(), password: formData.password }),
+  });
+  ```
+- Error handling: defensive `await response.json().catch(() => ({}))`. FastAPI validation
+  errors come as an array in `data.detail`; the code joins them into a readable string
+  so the user sees "email: field required" instead of `[object Object]`.
+- Networking failures fall through to `catch (err)` and show
+  "Unable to reach the server. Please try again.".
+
+### 7.4 Component hierarchy (public/landing)
+
+```
+Homepage
+ └─ Bg
+    ├─ Navbar
+    ├─ Hero
+    ├─ Features
+    ├─ HowItWorks
+    ├─ UseCases
+    ├─ CTA
+    └─ Footer
+
+Login / Signup / About / Pricing / Contact
+ ├─ Navbar
+ ├─ ...page content...
+ └─ Footer
+```
+
+No props drilling beyond a few props (`SignupForm` receives `plan`, `onSwitchPlan`).
+Cross-cutting auth state goes through `useAuth()` context instead.
+
+### 7.5 Custom hooks
+- `useAuth` (`context/AuthContext.jsx:101`) — wraps `useContext(AuthContext)` and
+  throws if used outside the provider. This fail-fast pattern catches misuse early.
+- Utility `getRoleHome(role)` isn’t a hook but is co-located.
+
+### 7.6 Form handling
+- No form library; `useState` + native HTML `required`/`minLength`.
+- Client-side validations implemented in `handleSubmit` (e.g. `Signup.jsx:73–82`:
+  password length + match check) before hitting the backend.
+- Errors render in a dedicated `.form-error` or `.error-message` div; success states
+  swap the whole form for a confirmation card (see `Signup.jsx:118` and
+  `Contact.jsx:76`).
+
+### 7.7 JWT handling on the client
+- `AuthContext.decodeBase64Url` adds padding before `atob` to handle URL-safe base64.
+- `getSessionFromToken` rejects:
+  - Tokens that don't split into 3 parts.
+  - Tokens whose payload doesn’t JSON-parse.
+  - Tokens without `role` or whose `role` isn’t in `ROLE_HOME`.
+  - Expired tokens (`now >= payload.exp`).
+- This means even if `localStorage` contains a stale token, the user is bounced to
+  `/login` on page reload.
+
+---------------------------------------------------------------------------------------
+
+## 8. Deployment & Infrastructure
+
+### 8.1 Dockerfile / docker-compose
+Neither exists in the repo. The project is developed locally with:
+- `uvicorn app.main:app --reload` from the `backend/` folder.
+- `npm run dev` from the `frontend/` folder (Vite at port 5173 with `host:true`).
+
+### 8.2 CI/CD
+None. `README.md` documents the branching policy (`main`, `dev`, `feature/*`) but no
+GitHub Actions / GitLab CI / Jenkins config is present.
+
+### 8.3 Environment configuration per stage
+- A single `backend/.env` (gitignored) is consumed by `pydantic-settings`. There is no
+  `dev`/`staging`/`prod` split; the developer overrides variables in their own `.env`.
+- Frontend reads `VITE_API_BASE_URL` from the Vite env; falls back to
+  `http://127.0.0.1:8000`.
+
+### 8.4 Uploads directory
+- `backend/uploads/` is gitignored. `settings.UPLOAD_DIR` (default `"uploads"`) is the
+  base; files are named `<uuid4>.<ext>`.
+
+### 8.5 Database bootstrap
+- `scripts/ensure_db.py` — creates the Postgres database if missing.
+- `alembic upgrade head` — runs all migrations (from `backend/`).
+
+---------------------------------------------------------------------------------------
+
+## 9. Testing
+
+There is **no `tests/` folder** and **no pytest/Jest configuration** in the repo. The
+only test-like code is in `backend/scripts/`:
+
+- `e2e_upload_file.py` — opens an existing PDF on disk, runs the full flow (signup →
+  login → upload → process → summary) against a live running server at
+  `http://127.0.0.1:8000`. Useful for smoke testing OCR/LLM on arbitrary files.
+- `e2e_upload_lebanese_pdf.py` — builds a small Arabic-ID PDF in memory using PIL and
+  PyMuPDF and runs the same flow. Reports the per-field extractions to stdout.
+- `run_pipeline_once.py` — runs `run_document_processing` directly against the DB,
+  bypassing the HTTP layer. Writes a JSON summary (non-ASCII safe) to
+  `scripts/pipeline_last_result.json` — useful on Windows where the console can’t
+  print Arabic reliably.
+- `fix_fields_columns.py` — a self-healing schema patcher that adds `fields.label` and
+  `fields.description` if they’re missing.
+- `ensure_db.py` — creates the database if missing.
+
+These scripts depend on the live API and a seeded template (Lebanese ID or CV), so they
+are effectively manual integration tests.
+
+What would be needed to complete test coverage:
+- Pytest suite for `app/crud/*` (pure DB logic).
+- FastAPI `TestClient` suite for auth, tenant isolation, permissions, upload/process.
+- Mock clients for OpenAI and Google Vision.
+- A frontend test runner (Vitest) for `AuthContext` token decoding edge cases and
+  `ProtectedRoute` role-matching behavior.
+
+---------------------------------------------------------------------------------------
+
+## 10. Known Trade-offs & Future Improvements
+
+### Trade-offs (as-built)
+
+1. **Pipeline is synchronous**. `/documents/{id}/process` calls
+   `run_document_processing` inline; OCR + LLM take several seconds and block the
+   worker. `settings.CELERY_BROKER_URL/CELERY_RESULT_BACKEND` exist but Celery is
+   **not wired**. For the MVP this was accepted to keep the code simple; in production
+   this should move behind a task queue so the route returns immediately with a real
+   `task_id`.
+2. **Refund is a hard delete**. `/payments/{id}/refund` (`routes/payments.py:63`) calls
+   `delete_payment`. A real refund should create a negative/refund row and keep the
+   audit trail.
+3. **Password rehash on login is not automatic**. `passlib` is configured with
+   `deprecated="auto"`, but the login code doesn’t call `pwd_context.needs_update` +
+   rehash. Easy to add in `authenticate()`.
+4. **JWT blacklisting / logout is stateless**. `/auth/logout` just asks the client to
+   drop the token; a stolen token remains valid until `exp`. A Redis blacklist or a
+   short `exp` + refresh-token pair would mitigate this.
+5. **CORS is permissive in dev**. The regex `192.168.x.x:*` is for mobile demos; it
+   should be disabled for production.
+6. **`SECRET_KEY` default is `"CHANGE_ME"`**. Helpful for local setup but must be
+   overridden via `.env` before anything reachable from the internet is deployed.
+7. **No rate limiting**. Anyone can hammer `/auth/login` or `/documents/upload`.
+   Adding `slowapi` or an Nginx layer in front is needed pre-production.
+8. **Tenant quotas are partial**. `Plan.max_users` is enforced; there’s no limit on
+   documents processed per month, per second, etc.
+9. **Auto-commits inside pipeline**. `create_extraction` commits per field — a long
+   pipeline writes N rows with N commits. Batching into a single commit would be
+   faster but requires re-plumbing the CRUD layer.
+10. **`placeholder` protected pages**. `Sdashboard`, `B_dashboard`, `EDashboard`, etc.
+    render only static text. They are routed and protected, but the actual features
+    (upload UI, extractions viewer, template builder, plan admin, monitoring) need to
+    be built on top of the existing API.
+11. **Legacy columns in models were commented out** rather than removed: see
+    `models/user.py`, `models/client.py`, `models/plan.py`, `models/document.py`.
+    The legacy ownership link (`owner_user_id`) was dropped in migration
+    `d4c49f63235c` and the ORM field was commented out but left in the file for
+    historical context.
+12. **API logs never capture response payloads** — the middleware sets
+    `response_payload=None` to keep latency/size under control. A future improvement
+    is to sample large responses with a size cap.
+13. **No dedicated error type layer**. The pipeline uses generic `ValueError` and
+    `Exception`; a typed hierarchy (e.g. `OcrError`, `LlmError`, `TemplateError`)
+    would allow the route to map to clean 4xx/5xx codes without string matching.
+14. **Two-step upload+process UX**. The frontend must call `/documents/upload` and then
+    `/documents/{id}/process`. A `?autostart=true` option or a single `/process` that
+    accepts a file would cut latency and complexity.
+15. **File storage is local disk**. `UPLOAD_DIR` defaults to `uploads/`. For production,
+    this should be S3 (or any compatible blob store). The `file_url` column is already
+    large enough (2048 chars) to hold presigned URLs.
+16. **Country/industry migration (`20260306_country_industry.py`) is a no-op
+    placeholder** in source because the schema change was applied directly to the DB
+    before being committed. That’s a documented gap; the actual columns were not
+    recovered into code.
+
+### If I had more time
+- Background tasks via Celery + Redis (already in config but unused), so
+  `/documents/{id}/process` returns a `task_id` and the frontend polls.
+- Full React UI for: template builder, field editor, document list with per-row status,
+  extractions viewer with confidence highlighting (< 0.5 surfaced), super admin
+  client/plan management, monitoring dashboard pulled from `api_logs`.
+- Stripe wired to `/subscriptions` via Stripe Checkout Sessions + webhooks instead of
+  the current mock payment row.
+- Pytest + Vitest test suites with coverage target (> 80% on `crud/*` and
+  `services/*`).
+- SOC-2-friendly audit: request/response payload scrubbing, PII redaction, retention
+  policies on `api_logs`.
+- Refresh tokens + short-lived access tokens.
+- Rate limiting (slowapi) on `/auth/login` and `/documents/upload`.
+- Dockerfile + docker-compose for Postgres + backend + frontend, plus a GitHub Actions
+  workflow that runs lint, tests, and `alembic upgrade --sql` as a smoke check on PRs.
+- Migration for `country`/`industry` on `clients` so the schema matches what the
+  placeholder migration implies.
+- Structured error types (`OcrError`, `LlmError`, `TemplateError`, `QuotaError`) to
+  avoid generic `except Exception`.
+- Field-level unique constraint on `subscriptions` (partial unique index on
+  `(client_id) WHERE status='active'`) so the DB enforces "one active subscription per
+  tenant" instead of the route.
+- Migrate `plans.monthly_price` to `NUMERIC(12,2)` or keep `INT cents` but enforce it
+  at the schema level with a check constraint.
+- Replace file disk storage with S3/GCS + presigned URLs.
+
+---------------------------------------------------------------------------------------
+
+## Appendix A — Quick Reference: All Endpoints
+
+| Method | Path                                         | Auth                    | CRUD  |
+| ------ | -------------------------------------------- | ----------------------- | ----- |
+| POST   | /auth/register                               | any authenticated       | C     |
+| POST   | /auth/signup/business                        | none                    | C     |
+| POST   | /auth/signup/enterprise                      | none                    | C     |
+| POST   | /auth/login                                  | none                    | R (+ token create) |
+| POST   | /auth/logout                                 | any authenticated       | —     |
+| GET    | /users/me                                    | any authenticated       | R     |
+| GET    | /users                                       | super_admin             | R     |
+| GET    | /users/{id}                                  | self or super_admin     | R     |
+| PUT    | /users/{id}                                  | super_admin             | U     |
+| PUT    | /users/{id}/role                             | super_admin             | U     |
+| PUT    | /users/{id}/password                         | super_admin             | U     |
+| DELETE | /users/{id}                                  | super_admin             | D     |
+| POST   | /clients                                     | super_admin             | C     |
+| GET    | /clients                                     | super_admin             | R     |
+| GET    | /clients/{id}                                | super_admin             | R     |
+| PUT    | /clients/{id}                                | super_admin             | U     |
+| DELETE | /clients/{id}                                | super_admin             | D     |
+| GET    | /plans                                       | any authenticated       | R (active) |
+| GET    | /plans/all                                   | super_admin             | R     |
+| GET    | /plans/{id}                                  | any authenticated       | R     |
+| POST   | /plans                                       | super_admin             | C     |
+| PUT    | /plans/{id}                                  | super_admin             | U     |
+| DELETE | /plans/{id}                                  | super_admin             | D     |
+| GET    | /subscriptions/me                            | any authenticated       | R     |
+| POST   | /subscriptions                               | super_admin             | C     |
+| POST   | /subscriptions/{id}/cancel                   | super_admin             | U     |
+| POST   | /subscriptions/change-plan                   | super_admin             | U     |
+| GET    | /subscriptions/all                           | super_admin             | R     |
+| GET    | /payments/me                                 | any authenticated (non-super) | R |
+| GET    | /payments/client/{id}                        | super_admin             | R     |
+| GET    | /payments/{id}                               | super_admin / same tenant | R   |
+| POST   | /payments                                    | super_admin / same tenant | C   |
+| PUT    | /payments/{id}                               | super_admin / same tenant | U   |
+| DELETE | /payments/{id}                               | super_admin / same tenant | D   |
+| POST   | /payments/{id}/refund                        | super_admin / same tenant | D (see 10) |
+| POST   | /templates                                   | template_management     | C     |
+| GET    | /templates                                   | any authenticated       | R (filtered) |
+| GET    | /templates/{id}                              | any authenticated (gated) | R   |
+| PUT    | /templates/{id}                              | template_management     | U     |
+| DELETE | /templates/{id}                              | template_management     | D     |
+| GET    | /templates/{id}/fields                       | any authenticated (gated) | R   |
+| DELETE | /templates/{id}/fields                       | template_management     | D     |
+| POST   | /fields                                      | template_management     | C     |
+| GET    | /fields/template/{id}                        | any authenticated (gated) | R   |
+| GET    | /fields/{id}                                 | any authenticated (gated) | R   |
+| PUT    | /fields/{id}                                 | template_management     | U     |
+| DELETE | /fields/{id}                                 | template_management     | D     |
+| POST   | /documents/upload                            | any authenticated       | C + side-effect (file) |
+| GET    | /documents                                   | any authenticated       | R     |
+| GET    | /documents/{id}                              | any authenticated (gated) | R   |
+| POST   | /documents/{id}/process                      | any authenticated (gated) | U + pipeline |
+| PUT    | /documents/{id}/reprocess                    | any authenticated (gated) | U + pipeline |
+| GET    | /documents/{id}/extractions                  | any authenticated (gated) | R   |
+| GET    | /documents/{id}/extractions/summary          | any authenticated (gated) | R   |
+| DELETE | /documents/{id}                              | any authenticated (gated) | D + file delete |
+| PUT    | /documents/{id}                              | any authenticated (gated) | U   |
+| PUT    | /documents/{id}/status                       | any authenticated (gated) | U   |
+| GET    | /extractions/document/{id}                   | any authenticated (gated) | R   |
+| GET    | /extractions/{id}                            | any authenticated (gated) | R   |
+| POST   | /extractions                                 | any authenticated (gated) | C   |
+| PUT    | /extractions/{id}                            | any authenticated (gated) | U   |
+| DELETE | /extractions/{id}                            | any authenticated (gated) | D   |
+
+End of report.

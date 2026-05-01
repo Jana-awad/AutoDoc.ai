@@ -26,7 +26,10 @@ export const ROLE_HOME = {
 
 const decodeBase64Url = (value) => {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+  const padded = normalized.padEnd(
+    normalized.length + ((4 - (normalized.length % 4)) % 4),
+    "=",
+  );
   try {
     return atob(padded);
   } catch {
@@ -160,7 +163,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       restoreSession,
     }),
-    [session, loading, loginWithToken, logout, restoreSession]
+    [session, loading, loginWithToken, logout, restoreSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
