@@ -1,6 +1,9 @@
 .enterprise-dashboard {
   min-height: 100vh;
   background: var(--gradient-hero);
+  /* Cap tall widgets (lists, audit, templates); body scrolls inside the card */
+  --edashboard-panel-max-height: min(28rem, 58vh);
+  --edashboard-metrics-max-height: min(22rem, 42vh);
 }
 
 .enterprise-dashboard-main {
@@ -29,6 +32,40 @@
 
 .enterprise-dashboard-section--compliance {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Fixed-height panels: header stays visible, overflow scrolls inside the card */
+.enterprise-dashboard-section--tri > .edashboard-card,
+.enterprise-dashboard-section--analytics > .edashboard-card,
+.enterprise-dashboard-section--compliance > .edashboard-card {
+  max-height: var(--edashboard-panel-max-height);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.enterprise-dashboard-section--tri > .edashboard-card > .edashboard-card__header,
+.enterprise-dashboard-section--analytics > .edashboard-card > .edashboard-card__header,
+.enterprise-dashboard-section--compliance > .edashboard-card > .edashboard-card__header {
+  flex-shrink: 0;
+}
+
+.enterprise-dashboard-section--tri > .edashboard-card > .edashboard-card__body,
+.enterprise-dashboard-section--analytics > .edashboard-card > .edashboard-card__body,
+.enterprise-dashboard-section--compliance > .edashboard-card > .edashboard-card__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.enterprise-dashboard-section--metrics .edashboard-metrics-grid {
+  max-height: var(--edashboard-metrics-max-height);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 /* Header */
@@ -671,6 +708,11 @@
 }
 
 @media (max-width: 900px) {
+  .enterprise-dashboard {
+    --edashboard-panel-max-height: min(32rem, 62vh);
+    --edashboard-metrics-max-height: min(26rem, 48vh);
+  }
+
   .enterprise-dashboard-section--tri,
   .enterprise-dashboard-section--analytics,
   .enterprise-dashboard-section--compliance {
