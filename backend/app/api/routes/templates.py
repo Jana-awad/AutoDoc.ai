@@ -114,15 +114,20 @@ def _normalize_builder_payload(
     fields_dict = [f.model_dump() for f in payload.fields]
     ai_config_dict = payload.ai_config.model_dump()
 
-    # Role defaults: enterprise admins always bind to their client, never global.
+    # Visibility rules (creation):
+    # - Enterprise admin: always client-scoped for their tenant; never global.
+    # - Super admin: global for everyone when no client_id; if client_id is set,
+    #   template is visible only to that enterprise (same rule as list/filter).
     if user.role == UserRole.ENTERPRISE_ADMIN:
         template_dict["is_global"] = False
         template_dict["client_id"] = user.client_id
     elif user.role == UserRole.SUPER_ADMIN:
-        # Super admin defaults to a global template unless they explicitly bound
-        # it to a client.
-        if template_dict.get("client_id") is None:
-            template_dict["is_global"] = bool(template_dict.get("is_global", True))
+        cid = template_dict.get("client_id")
+        if cid is None:
+            template_dict["client_id"] = None
+            template_dict["is_global"] = True
+        else:
+            template_dict["is_global"] = False
 
     return {
         "template": template_dict,

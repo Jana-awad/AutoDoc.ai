@@ -15,6 +15,8 @@ import SuperOperations from "./pages/super/SuperOperations";
 import ClientLens from "./pages/super/ClientLens";
 import EDashboard from "./pages/enterprise/Edashboard";
 import Template from "./pages/enterprise/template";
+import EnterpriseTemplatesAi from "./pages/enterprise/templates_ai";
+import EnterpriseTemplateBuilder from "./pages/enterprise/TemplateBuilder";
 import Api from "./pages/enterprise/api";
 import EDocuments from "./pages/enterprise/EDocuments";
 import EnterpriseProfileLayout from "./pages/enterprise/profile/EnterpriseProfileLayout";
@@ -61,6 +63,8 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["enterprise_admin"]} />}>
           <Route path="/enterprise" element={<EDashboard />} />
           <Route path="/enterprise/template" element={<Template />} />
+          <Route path="/enterprise/templates-ai" element={<EnterpriseTemplatesAi />} />
+          <Route path="/enterprise/templates-ai/builder" element={<EnterpriseTemplateBuilder />} />
           <Route path="/enterprise/documents" element={<EDocuments />} />
           <Route path="/enterprise/api" element={<Api />} />
           <Route path="/enterprise/profile" element={<EnterpriseProfileLayout />}>

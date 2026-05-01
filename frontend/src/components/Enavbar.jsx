@@ -5,7 +5,7 @@ import "./Enavbar.css";
 
 const NAV_LINKS = [
   { label: "Dashboard", to: "/enterprise" },
-  { label: "Templates", to: "/enterprise/template" },
+  { label: "Templates", to: "/enterprise/templates-ai" },
   { label: "Documents", to: "/enterprise/documents" },
   { label: "API", to: "/enterprise/api" },
   { label: "Profile", to: "/enterprise/profile" },

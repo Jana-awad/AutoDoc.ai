@@ -1,21 +1,26 @@
-import { Outlet } from "react-router-dom";
-import Enavbar from "../../../components/Enavbar";
+import { Outlet, useNavigate } from "react-router-dom";
+import EnterpriseNav from "../../../components/EnterpriseNav";
 import "../../../components/variables.css";
 import "../../../components/global.css";
 import EnterpriseSidebar from "./EnterpriseSidebar.jsx";
 import "../../business/B_profile.css";
 
 function EnterpriseProfileLayout() {
+  const navigate = useNavigate();
   return (
     <>
-      <Enavbar />
+      <EnterpriseNav
+        userName="Enterprise Admin"
+        userEmail="admin@autodoc.ai"
+        onSettings={() => navigate("/enterprise/profile/settings")}
+      />
       <div className="b-profile-layout">
       <EnterpriseSidebar />
-      <div className="b-profile-content">
+      <main id="main-content" className="b-profile-content">
         <div className="b-profile-content-inner">
           <Outlet />
         </div>
-      </div>
+      </main>
     </div>
     </>
   );

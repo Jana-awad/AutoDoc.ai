@@ -38,7 +38,7 @@ function ETemplateIntelligence() {
       title="Template Intelligence"
       subtitle="Template health, training, and latest updates."
       actions={
-        <Link className="btn btn-glass" to="/enterprise/template">
+        <Link className="btn btn-glass" to="/enterprise/templates-ai">
           Manage templates
         </Link>
       }

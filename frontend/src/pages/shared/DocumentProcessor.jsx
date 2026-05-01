@@ -310,7 +310,7 @@ function DocumentProcessor({ NavComponent, theme = "enterprise", brand = "Enterp
     <div className={`docproc docproc--${theme}`}>
       {NavComponent ? <NavComponent /> : null}
 
-      <main className="docproc-main">
+      <main id="main-content" className="docproc-main">
         <header className="docproc-header">
           <span className="docproc-eyebrow">{brand}</span>
           <h1 className="docproc-title">Process a document</h1>
