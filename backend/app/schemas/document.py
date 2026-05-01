@@ -8,6 +8,13 @@ class DocumentOut(BaseModel):
     file_url: str | None = None
     status: str
     created_at: datetime
+    processed_at: datetime | None = None
 
     class Config:
         from_attributes = True
+
+class DocumentUpdate(BaseModel):
+    template_id: int | None = None
+    file_url: str | None = None
+    status: str | None = None
+

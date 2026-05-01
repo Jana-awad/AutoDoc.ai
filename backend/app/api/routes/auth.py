@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
 from app.schemas.user import UserCreate, UserOut
-from app.schemas.signup import SignupRequest, SignupResponse, SuperAdminSignupRequest
+from app.schemas.signup import SignupRequest, SignupResponse
+from app.schemas.login import LoginBody
 from app.crud.crud_user import get_by_email, create_user, authenticate
 from app.crud.crud_client import create_client
 from app.crud.crud_plan import list_active_plans
@@ -97,7 +98,7 @@ def _signup_with_role(
     try:
         client = create_client(
             db,
-            name=payload.full_name,
+            name=payload.organization_name,
             company_name=payload.company_name or payload.organization_name,
             email=payload.email,
             commit=False,
@@ -142,20 +143,22 @@ def signup_enterprise(payload: SignupRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login")
-def login(payload: dict, db: Session = Depends(get_db)):
-    # expects: {"email": "...", "password": "..."}
-    email = payload.get("email")
-    password = payload.get("password")
-    if not email or not password:
-        raise HTTPException(status_code=400, detail="email and password required")
-
-    user = authenticate(db, email=email, password=password)
+def login(payload: LoginBody, db: Session = Depends(get_db)):
+    # EmailStr + Field validation; authenticate uses same normalization as signup.
+    user = authenticate(db, email=str(payload.email), password=payload.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+    role_val = user.role.value if hasattr(user.role, "value") else str(user.role)
     token = create_access_token(
         subject=str(user.id),
-        role=user.role,
+        role=role_val,
         client_id=user.client_id,
     )
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.post("/logout")
+def logout(_current_user: User = Depends(get_current_user)):
+    # Stateless JWT logout: client should delete token.
+    return {"detail": "Logged out"}

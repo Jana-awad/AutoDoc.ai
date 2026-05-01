@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/Footer';
 import './Login.css';
@@ -14,14 +14,22 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loadingForm, setLoadingForm] = useState(false);
   const [error, setError] = useState(null);
+  const [info, setInfo] = useState(null);
   const { loginWithToken, isAuthenticated, role, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!loading && isAuthenticated && role) {
       navigate(getRoleHome(role), { replace: true });
     }
   }, [loading, isAuthenticated, role, navigate]);
+
+  useEffect(() => {
+    if (location.state?.expired) {
+      setInfo('Your session has expired. Please log in again to continue.');
+    }
+  }, [location.state]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -47,7 +55,7 @@ const Login = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password,
         }),
       });
@@ -55,7 +63,13 @@ const Login = () => {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(data.detail || 'Invalid email or password. Please try again.');
+        const d = data.detail;
+        const msg = Array.isArray(d)
+          ? d.map((e) => e.msg || JSON.stringify(e)).join(' ')
+          : typeof d === 'string'
+            ? d
+            : 'Invalid email or password. Please try again.';
+        setError(msg);
         setLoadingForm(false);
         return;
       }
@@ -256,6 +270,12 @@ const Login = () => {
                     </button>
                   </div>
                 </div>
+
+                {info && !error && (
+                  <div className="form-error" style={{ background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#92400e' }}>
+                    {info}
+                  </div>
+                )}
 
                 {error && (
                   <div className="form-error">

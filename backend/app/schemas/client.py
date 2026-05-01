@@ -16,6 +16,12 @@ class ClientCreate(ClientBase):
     plan_id: int | None = None
 
 
+class ClientUpdate(BaseModel):
+    name: str | None = None
+    company_name: str | None = None
+    email: str | None = None
+
+
 class ClientOut(ClientBase):
     id: int
     api_key: str | None = None

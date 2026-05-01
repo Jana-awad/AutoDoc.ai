@@ -1,12 +1,30 @@
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.core.enums import UserRole
 from app.core.security import hash_password, verify_password
 from app.core.limits import ensure_client_can_add_user
-from app.core.limits import ensure_client_can_add_user  
+
+def _normalize_email(email: str | None) -> str:
+    return (email or "").strip().lower()
+
 
 def get_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
+    """Match stored email case-insensitively (PostgreSQL lower())."""
+    normalized = _normalize_email(email)
+    if not normalized:
+        return None
+    # Primary: lower(email). Fallback: lower(trim(email)) for legacy rows with spaces.
+    return (
+        db.query(User)
+        .filter(
+            or_(
+                func.lower(User.email) == normalized,
+                func.lower(func.trim(User.email)) == normalized,
+            )
+        )
+        .first()
+    )
 
 def create_user(
     db: Session,
@@ -21,6 +39,10 @@ def create_user(
     # enforce user limit (only for client users)
     if client_id is not None and enforce_limits:
         ensure_client_can_add_user(db, client_id)
+
+    email = _normalize_email(email)
+    if not email:
+        raise ValueError("email is required")
 
     user = User(
         email=email,
@@ -47,6 +69,7 @@ def authenticate(db: Session, email: str, password: str) -> User | None:
 
 def list_users(db: Session) -> list[User]:
     return db.query(User).order_by(User.id.desc()).all()
+
 def delete_user(db: Session, user: User) -> None:
     db.delete(user)
     db.commit()
@@ -60,8 +83,19 @@ def update_user_password(db: Session, user: User, new_password: str) -> User:
     db.commit()
     db.refresh(user)
     return user
+
 def update_user_role(db: Session, user: User, new_role: str) -> User:
     user.role = new_role
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+def update_user(db: Session, user: User, email: str | None, username: str | None) -> User:
+    if email is not None:
+        user.email = email
+    if username is not None:
+        user.username = username
     db.add(user)
     db.commit()
     db.refresh(user)

@@ -34,6 +34,19 @@ def get_client(db: Session, client_id: int) -> Client | None:
 
 def get_client_by_api_key(db: Session, api_key: str) -> Client | None:
     return db.query(Client).filter(Client.api_key == api_key).first()
+
 def delete_client(db: Session, client: Client) -> None:
     db.delete(client)
     db.commit()
+
+def update_client(db: Session, client: Client, name: str | None, company_name: str | None, email: str | None) -> Client:
+    if name is not None:
+        client.name = name
+    if company_name is not None:
+        client.company_name = company_name
+    if email is not None:
+        client.email = email
+    db.add(client)
+    db.commit()
+    db.refresh(client)
+    return client

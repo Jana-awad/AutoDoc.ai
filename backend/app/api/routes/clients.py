@@ -8,12 +8,19 @@ from app.api.deps import require_superadmin
 from app.schemas.client import (
     ClientCreate,
     ClientOut,
+    ClientUpdate,
     ClientListOut,
     ClientStatsOut,
     ClientDetailsOut,
     ClientUserOut,
 )
-from app.crud.crud_client import create_client, list_clients, get_client, delete_client, generate_api_key
+from app.crud.crud_client import (
+    create_client,
+    get_client,
+    delete_client,
+    generate_api_key,
+    update_client,
+)
 from app.crud.crud_subscription import get_active_subscription, create_subscription
 from app.crud.crud_plan import get_plan
 from app.crud.crud_user import create_user, get_by_email
@@ -277,3 +284,16 @@ def read_one(client_id: int, db: Session = Depends(get_db), _super=Depends(requi
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     return client
+
+
+@router.put("/{client_id}", response_model=ClientOut)
+def update_client_route(
+    client_id: int,
+    payload: ClientUpdate,
+    db: Session = Depends(get_db),
+    _super=Depends(require_superadmin),
+):
+    client = get_client(db, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return update_client(db, client, payload.name, payload.company_name, payload.email)

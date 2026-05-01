@@ -1,0 +1,6 @@
+# Google Cloud Vision — required for OCR (only engine).
+# Enable "Cloud Vision API" on your GCP project and set credentials, e.g.:
+#   GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+# Optional: GOOGLE_VISION_QUOTA_PROJECT_ID in .env for quota attribution.
+# Local dev: gcloud auth application-default login
+google-cloud-vision>=3.0.0

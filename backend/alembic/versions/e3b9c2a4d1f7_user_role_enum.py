@@ -31,9 +31,12 @@ def upgrade() -> None:
         """
     )
 
-    op.execute("UPDATE users SET role = 'super admin' WHERE role = 'superadmin';")
-    op.execute("UPDATE users SET role = 'business admin' WHERE role = 'business_client_admin';")
-    op.execute("UPDATE users SET role = 'enterprise admin' WHERE role = 'enterprise_client_admin';")
+    # Normalize all possible role formats to enum format (with spaces)
+    op.execute("UPDATE users SET role = 'super admin' WHERE role = 'superadmin' OR role = 'super_admin';")
+    op.execute("UPDATE users SET role = 'business admin' WHERE role = 'business_client_admin' OR role = 'business_admin';")
+    op.execute("UPDATE users SET role = 'enterprise admin' WHERE role = 'enterprise_client_admin' OR role = 'enterprise_admin';")
+    op.execute("UPDATE users SET role = 'user' WHERE role IS NULL OR role = '';")
+
 
     op.execute("ALTER TABLE users ALTER COLUMN role TYPE user_role USING role::user_role;")
     op.execute("ALTER TABLE users ALTER COLUMN role SET DEFAULT 'user';")

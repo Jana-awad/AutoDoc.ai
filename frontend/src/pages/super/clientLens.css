@@ -1,0 +1,101 @@
+.client-lens {
+  min-height: 100vh;
+  background: var(--gradient-hero, linear-gradient(180deg, #fff, #e0f2fe));
+}
+
+.client-lens-banner {
+  position: sticky;
+  top: calc(var(--navbar-height, 64px) + 0.5rem);
+  z-index: 20;
+  margin: 0 auto;
+  max-width: var(--container-max, 1280px);
+  padding: 0.65rem 1.25rem;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-lg, 0.75rem);
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
+.client-lens-main {
+  padding: var(--space-4, 1rem) var(--container-padding, 1.5rem) var(--space-16, 4rem);
+}
+
+.client-lens-container {
+  max-width: var(--container-max, 1280px);
+  margin: 0 auto;
+}
+
+.client-lens-header h1 {
+  margin: 0 0 0.25rem;
+  color: var(--color-navy-deep, #0a1628);
+}
+
+.client-lens-link {
+  color: var(--color-ocean, #3b82c6);
+  font-weight: 600;
+}
+
+.client-lens-section {
+  margin-top: 2rem;
+}
+
+.client-lens-section h2 {
+  font-size: 1.125rem;
+  margin: 0 0 0.75rem;
+  color: var(--color-navy-medium, #1e3a5f);
+}
+
+.client-lens-dl > div {
+  display: flex;
+  justify-content: space-between;
+  max-width: 20rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--color-gray-200, #e2e8f0);
+}
+
+.client-lens-dl dt {
+  color: var(--color-gray-500, #64748b);
+}
+
+.client-lens-dl dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.client-lens-tablewrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-gray-200, #e2e8f0);
+  border-radius: var(--radius-xl, 1rem);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.client-lens-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.client-lens-table th,
+.client-lens-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-200, #e2e8f0);
+}
+
+.client-lens-empty {
+  text-align: center;
+  color: var(--color-gray-500, #64748b);
+}
+
+.client-lens-error {
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg, 0.75rem);
+  color: #991b1b;
+}
+
+.client-lens-muted {
+  color: var(--color-gray-600, #475569);
+}

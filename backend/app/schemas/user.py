@@ -10,8 +10,28 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=72)
 
+class UserUpdate(BaseModel):
+    email: EmailStr | None = None
+    username: str | None = None
+
+class UserRoleUpdate(BaseModel):
+    role: UserRole
+
+class UserPasswordUpdate(BaseModel):
+    password: str = Field(min_length=8, max_length=72)
+
 
 class UserOut(UserBase):
     id: int
     class Config:
         from_attributes = True
+
+
+class UserProfileOut(UserOut):
+    company_name: str | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    """Current and new password for secure password change."""
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=72)

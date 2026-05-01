@@ -129,6 +129,7 @@ def get_active_subscription(db: Session, client_id: int) -> Subscription | None:
         .first()
     )
 
+
 def create_subscription(
     db: Session,
     client_id: int,
@@ -153,6 +154,7 @@ def create_subscription(
         db.flush()
     return sub
 
+
 def cancel_subscription(db: Session, sub: Subscription) -> Subscription:
     sub.status = "canceled"
     sub.end_date = datetime.now(timezone.utc)
@@ -160,6 +162,7 @@ def cancel_subscription(db: Session, sub: Subscription) -> Subscription:
     db.commit()
     db.refresh(sub)
     return sub
+
 
 def change_subscription_plan(db: Session, client_id: int, new_plan_id: int) -> Subscription:
     # cancel old active subscription if exists

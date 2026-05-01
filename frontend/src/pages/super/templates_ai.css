@@ -91,6 +91,86 @@
   transform: translateY(-2px);
 }
 
+.tpl-overview-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--glass-bg-light, rgba(255, 255, 255, 0.65));
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--color-navy-deep, #0a1628);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.tpl-overview-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.85);
+  transform: translateY(-1px);
+}
+
+.tpl-overview-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ----- Banner (errors, info) ----- */
+.tpl-overview-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-xl);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-6);
+  border: 1px solid transparent;
+}
+
+.tpl-overview-banner--error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+}
+
+.tpl-overview-banner-close {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  opacity: 0.7;
+}
+
+.tpl-overview-banner-close:hover {
+  opacity: 1;
+}
+
+/* ----- Danger button variant for cards/tables ----- */
+.tpl-overview-card-btn--danger {
+  color: #b91c1c;
+}
+
+.tpl-overview-card-btn--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ----- Spinner ----- */
+@keyframes tpl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tpl-spin {
+  animation: tpl-spin 0.8s linear infinite;
+}
+
 /* ----- Stat cards ----- */
 .tpl-overview-stats {
   display: grid;

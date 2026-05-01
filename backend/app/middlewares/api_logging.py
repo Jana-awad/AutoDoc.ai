@@ -1,4 +1,5 @@
 import json
+import logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -6,10 +7,12 @@ from starlette.responses import Response
 from app.db.session import SessionLocal
 from app.core.jwt import decode_token
 
-# paths you typically don’t want to log payloads for
+# paths you typically don't want to log payloads for
 SKIP_PATHS = {"/docs", "/openapi.json", "/redoc"}
 
 MAX_BODY = 10_000  # limit to keep DB safe
+
+_log = logging.getLogger(__name__)
 
 
 class APILoggingMiddleware(BaseHTTPMiddleware):
@@ -44,7 +47,7 @@ class APILoggingMiddleware(BaseHTTPMiddleware):
 
         response: Response = await call_next(request)
 
-        # Save log row
+        # Save log row (never fail the request if DB is down or misconfigured)
         if path not in SKIP_PATHS:
             db = SessionLocal()
             try:
@@ -57,6 +60,9 @@ class APILoggingMiddleware(BaseHTTPMiddleware):
                     request_payload=request_body,
                     response_payload=None,  # keep simple for now
                 )
+            except Exception:
+                db.rollback()
+                _log.warning("API request log not saved (database error)", exc_info=True)
             finally:
                 db.close()
 

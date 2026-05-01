@@ -6,13 +6,14 @@ Senior Project– AI-powered document processing and template management system.
 - frontend/ : React frontend
 
 # Status
-Phase 2 – Core Business Logic
+Phase 2 – Core Business Logic (includes preparation, ground rules, and ongoing feature work)
 
 ## UI Interfaces
-- Public 
+- Public
 - Business client dashboard
 - Enterprise client dashboard
 - Super admin dashboard
+
 ## Branching Strategy
 
 - main: stable, production-ready code

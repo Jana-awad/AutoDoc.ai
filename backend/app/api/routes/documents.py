@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
@@ -8,6 +9,7 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.core.enums import UserRole
 from app.core.config import settings
+from app.crud.crud_platform_config import get_platform_config
 from app.core.permissions import ensure_user_can_use_template
 from app.crud.crud_document import (
     create_document,
@@ -15,20 +17,47 @@ from app.crud.crud_document import (
     list_documents_for_user,
     set_document_status,
     delete_extractions_for_document,
-    create_mock_extractions,
+    update_document,
+    delete_document as delete_document_crud,
 )
+from app.services.document_pipeline import run_document_processing
 from app.schemas.extraction import ExtractionOut
 from app.crud.crud_extraction import list_extractions_for_document
 from app.schemas.document_process import DocumentProcessOut
-from app.schemas.document import DocumentOut
+from app.schemas.document import DocumentOut, DocumentUpdate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+def _mark_document_failed_safely(db: Session, document_id: int) -> None:
+    """Defense-in-depth: guarantee the document never stays stuck on ``processing``.
+
+    The pipeline already attempts to set ``failed`` on its own, but if the
+    underlying error left the SQLAlchemy session in a broken state the inner
+    ``set_document_status`` call would also fail silently. We rollback any
+    pending transaction here, then best-effort flip the status — wrapped so
+    that a secondary failure cannot mask the original error returned to the
+    caller.
+    """
+    try:
+        db.rollback()
+    except Exception:
+        logger.exception("Rollback failed while marking document %s as failed", document_id)
+
+    try:
+        doc = get_document(db, document_id)
+        if doc and doc.status != "failed":
+            set_document_status(db, doc, "failed")
+    except Exception:
+        logger.exception("Failed to mark document %s as failed", document_id)
 
 
 @router.post("/upload", response_model=DocumentOut)
 def upload_document(
     template_id: int = Form(...),
-    client_id: int | None = Form(None),   # ✅ add this
+    client_id: int | None = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -42,6 +71,13 @@ def upload_document(
             raise HTTPException(status_code=400, detail="User has no client")
         final_client_id = user.client_id
 
+    pc = get_platform_config(db)
+    if pc.uploads_paused:
+        raise HTTPException(
+            status_code=503,
+            detail="New document uploads are paused platform-wide. Contact your operator.",
+        )
+
     ensure_user_can_use_template(db, user, template_id)
 
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -51,8 +87,6 @@ def upload_document(
 
     with open(save_path, "wb") as f:
         f.write(file.file.read())
-
-    client_id = user.client_id if user.role != UserRole.SUPER_ADMIN else (user.client_id or 0)
 
     doc = create_document(db, client_id=final_client_id, template_id=template_id, file_url=save_path)
     return doc
@@ -108,18 +142,36 @@ def process_document(
     if doc.template_id is None:
         raise HTTPException(status_code=400, detail="Document has no template_id")
 
-    # set to processing
+    pc = get_platform_config(db)
+    if not pc.document_processing_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="Document processing is disabled platform-wide by operators.",
+        )
+
     set_document_status(db, doc, "processing")
 
     try:
-        delete_extractions_for_document(db, doc.id)
-        created = create_mock_extractions(db, doc.id, doc.template_id)
-        doc = set_document_status(db, doc, "done")
-    except Exception:
-        set_document_status(db, doc, "failed")
-        raise
+        created = run_document_processing(db, doc.id)
+        doc = get_document(db, document_id)
+    except ValueError as e:
+        _mark_document_failed_safely(db, document_id)
+        msg = str(e)
+        if "disabled platform-wide" in msg:
+            raise HTTPException(status_code=503, detail=msg) from e
+        raise HTTPException(status_code=400, detail=msg) from e
+    except Exception as e:
+        _mark_document_failed_safely(db, document_id)
+        raise HTTPException(status_code=502, detail=f"Processing failed: {e!s}") from e
 
-    return {"document": doc, "extractions_created": created}
+    return {
+        "document": doc,
+        "task_id": None,
+        "status": "done",
+        "extractions_created": created,
+    }
+
+
 @router.get("/{document_id}/extractions", response_model=list[ExtractionOut])
 def get_document_extractions(
     document_id: int,
@@ -135,4 +187,147 @@ def get_document_extractions(
         if user.client_id is None or doc.client_id != user.client_id:
             raise HTTPException(status_code=403, detail="Forbidden")
 
-    return list_extractions_for_document(db, document_id)
+    extractions = list_extractions_for_document(db, document_id)
+
+    # Attach field name/label for readability
+    for ex in extractions:
+        if ex.field is not None:
+            ex.field_name = ex.field.name
+            ex.field_label = ex.field.label
+
+    return extractions
+
+
+@router.get("/{document_id}/extractions/summary")
+def get_document_extractions_summary(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # permission: superadmin any; others only their client
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    extractions = list_extractions_for_document(db, document_id)
+    summary: dict[str, object | None] = {}
+    for ex in extractions:
+        if ex.field is None:
+            continue
+        key = ex.field.name
+        value = ex.value_json if ex.value_json is not None else ex.value_text
+        summary[key] = value
+
+    return summary
+
+
+@router.delete("/{document_id}")
+def delete_document_route(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # permission: superadmin any; others only their client
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    delete_extractions_for_document(db, document_id)
+    if doc.file_url and os.path.exists(doc.file_url):
+        os.remove(doc.file_url)
+    delete_document_crud(db, doc)
+    return {"detail": "Document deleted"}
+
+
+@router.put("/{document_id}/status")
+def update_document_status(
+    document_id: int,
+    status: str = Form(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # permission: superadmin any; others only their client
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    updated_doc = set_document_status(db, doc, status)
+    return updated_doc
+
+
+@router.put("/{document_id}", response_model=DocumentOut)
+def update_document_route(
+    document_id: int,
+    payload: DocumentUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    return update_document(db, doc, payload.template_id, payload.file_url, payload.status)
+
+
+@router.put("/{document_id}/reprocess", response_model=DocumentProcessOut)
+def reprocess_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    doc = get_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # permission: superadmin any; others only their client
+    if user.role != UserRole.SUPER_ADMIN:
+        if user.client_id is None or doc.client_id != user.client_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    if doc.template_id is None:
+        raise HTTPException(status_code=400, detail="Document has no template_id")
+
+    pc = get_platform_config(db)
+    if not pc.document_processing_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="Document processing is disabled platform-wide by operators.",
+        )
+
+    set_document_status(db, doc, "processing")
+
+    try:
+        created = run_document_processing(db, doc.id)
+        doc = get_document(db, document_id)
+    except ValueError as e:
+        _mark_document_failed_safely(db, document_id)
+        msg = str(e)
+        if "disabled platform-wide" in msg:
+            raise HTTPException(status_code=503, detail=msg) from e
+        raise HTTPException(status_code=400, detail=msg) from e
+    except Exception as e:
+        _mark_document_failed_safely(db, document_id)
+        raise HTTPException(status_code=502, detail=f"Processing failed: {e!s}") from e
+
+    return {
+        "document": doc,
+        "task_id": None,
+        "status": "done",
+        "extractions_created": created,
+    }

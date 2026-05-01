@@ -5,7 +5,8 @@
 import "../../components/variables.css";
 import "../../components/global.css";
 import { useState, useEffect } from "react";
-import Enavbar from "../../components/Enavbar";
+import { useNavigate } from "react-router-dom";
+import EnterpriseNav from "../../components/EnterpriseNav";
 import ETemplateList from "../../components/ETemplateList";
 import ETemplateCreateModal from "../../components/ETemplateCreateModal";
 import ETemplateTraining from "../../components/ETemplateTraining";
@@ -24,6 +25,7 @@ import {
 import "./template.css";
 
 function Template() {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -86,9 +88,13 @@ function Template() {
 
   return (
     <div className="enterprise-template enterprise-template-page">
-      <Enavbar />
+      <EnterpriseNav
+        userName="Enterprise Admin"
+        userEmail="admin@autodoc.ai"
+        onSettings={() => navigate("/enterprise/profile/settings")}
+      />
 
-      <main className="enterprise-template-main">
+      <main id="main-content" className="enterprise-template-main">
         {/* Page header with Unlimited badge */}
         <header className="enterprise-template-header">
           <div>

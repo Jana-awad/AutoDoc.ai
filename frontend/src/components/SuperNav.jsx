@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import SuperBreadcrumbs from './SuperBreadcrumbs';
 import './SuperNav.css';
 
 const LogoMark = () => (
@@ -69,6 +70,18 @@ const MonitorIcon = () => (
   </svg>
 );
 
+const SearchIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
+    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.75" />
+    <path
+      d="M21 21l-4.3-4.3"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 const DashboardIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" />
@@ -105,6 +118,7 @@ const defaultMegaMenus = {
         heading: 'Pages',
         items: [
           { title: 'Dashboard', description: 'Overview and key metrics.', path: '/super', icon: <DashboardIcon /> },
+          { title: 'Operations hub', description: 'Platform flags, audit, exports, health.', path: '/super/operations', icon: <MonitorIcon /> },
         ],
       },
     ],
@@ -118,8 +132,7 @@ const defaultMegaMenus = {
         items: [
           { title: 'Templates overview', description: 'Overview of templates and AI extraction.', path: '/super/templates-ai', icon: <TemplateIcon /> },
           { title: 'Template builder', description: 'Create and configure AI extraction templates.', path: '/super/templates-ai/builder', icon: <PipelineIcon /> },
-          { title: 'AI overview', description: 'AI pipeline and extraction insights.', path: '/super/templates-ai/ai-overview', icon: <SparkIcon /> },
-          { title: 'Templates manager', description: 'Manage and organize your templates.', path: '/super/templates-ai/manager', icon: <ShieldIcon /> },
+          { title: 'AI overview', description: 'OpenAI, Vision OCR, API keys, webhooks, usage.', path: '/super/templates-ai/ai-overview', icon: <SparkIcon /> },
         ],
       },
     ],
@@ -156,16 +169,42 @@ const defaultMegaMenus = {
   },
 };
 
+function buildCommandDestinations(navLinks) {
+  const list = [];
+  Object.values(defaultMegaMenus).forEach((m) => {
+    m.columns.forEach((col) => {
+      col.items.forEach((item) => {
+        list.push({
+          path: item.path,
+          title: item.title,
+          hay: `${item.title} ${item.description}`.toLowerCase(),
+        });
+      });
+    });
+  });
+  navLinks.forEach((link) => {
+    list.push({ path: link.path, title: link.name, hay: link.name.toLowerCase() });
+  });
+  list.push({
+    path: '/super/operations',
+    title: 'Operations hub',
+    hay: 'operations platform flags audit kill switch exports activity',
+  });
+  return list;
+}
+
 const SuperNav = ({
   userName = 'User',
   userEmail = 'user@autodoc.ai',
   onLogout,
+  onSearch,
   onSettings,
 }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const navRef = useRef(null);
+  const searchRef = useRef(null);
   const [mounted, setMounted] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [isSolid, setIsSolid] = useState(false);
@@ -173,20 +212,32 @@ const SuperNav = ({
   const [openMega, setOpenMega] = useState(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState(null);
+  const [searchValue, setSearchValue] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const [isMac, setIsMac] = useState(false);
 
   const navLinks = useMemo(
     () => [
       { name: 'Dashboard', path: '/super', mega: 'dashboard' },
       { name: 'Template & AI', path: '/super/templates-ai', mega: 'templates' },
       { name: 'Clients & Plans', path: '/super/clients-plans', mega: 'clients' },
+      { name: 'Operations', path: '/super/operations' },
+      { name: 'Monitoring', path: '/super/monitoring' },
     ],
     []
   );
 
+  const commandDestinations = useMemo(() => buildCommandDestinations(navLinks), [navLinks]);
+
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const prefersMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+    setIsMac(prefersMac);
   }, []);
 
   useEffect(() => {
@@ -213,6 +264,11 @@ const SuperNav = ({
 
   useEffect(() => {
     const onKeyDown = (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setIsSearchFocused(true);
+        searchRef.current?.focus();
+      }
       if (event.key === 'Escape') {
         setOpenMega(null);
         setIsMobileOpen(false);
@@ -244,6 +300,25 @@ const SuperNav = ({
       return location.pathname === '/super';
     }
     return location.pathname.startsWith(path);
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const q = searchValue.trim().toLowerCase();
+    if (q) {
+      const hit = commandDestinations.find(
+        (d) => d.hay.includes(q) || d.title.toLowerCase().includes(q)
+      );
+      if (hit) {
+        navigate(hit.path);
+        setSearchValue('');
+        setIsSearchFocused(false);
+        return;
+      }
+    }
+    if (onSearch) {
+      onSearch(searchValue);
+    }
   };
 
   const handleThemeToggle = () => {
@@ -290,6 +365,9 @@ const SuperNav = ({
       ].join(' ')}
       ref={navRef}
     >
+      <a href="#main-content" className="supernav-skip-link">
+        Skip to main content
+      </a>
       <div className="supernav-inner">
         <div className="supernav-left">
           <Link to="/super" className="supernav-logo" aria-label="AutoDoc AI">
@@ -359,6 +437,24 @@ const SuperNav = ({
         </div>
 
         <div className="supernav-right">
+          <form className={`supernav-search ${isSearchFocused ? 'focused' : ''}`} onSubmit={handleSearchSubmit}>
+            <SearchIcon />
+            <input
+              ref={searchRef}
+              type="search"
+              placeholder="Search"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              aria-label="Search"
+            />
+            <span className="supernav-search-hint" aria-hidden="true">
+              <kbd>{isMac ? '⌘' : 'Ctrl'}</kbd>
+              <kbd>K</kbd>
+            </span>
+          </form>
+
           <button className="supernav-theme-toggle" type="button" onClick={handleThemeToggle} aria-label="Toggle theme">
             <span className="theme-icon sun"><SunIcon /></span>
             <span className="theme-icon moon"><MoonIcon /></span>
@@ -412,6 +508,8 @@ const SuperNav = ({
           </button>
         </div>
       </div>
+
+      <SuperBreadcrumbs />
 
       <div className={`supernav-mobile ${isMobileOpen ? 'open' : ''}`} aria-hidden={!isMobileOpen}>
         <div className="supernav-mobile-header">

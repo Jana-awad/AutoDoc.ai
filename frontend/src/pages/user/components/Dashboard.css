@@ -1,0 +1,83 @@
+.user-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.user-dashboard__hero {
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-10);
+  border-radius: calc(var(--radius-2xl) + 6px);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.7) 100%),
+    linear-gradient(120deg, rgba(59, 130, 198, 0.14), rgba(125, 211, 252, 0.08));
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.user-dashboard__hero-glow {
+  position: absolute;
+  width: 460px;
+  height: 460px;
+  top: -230px;
+  right: -90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(125, 211, 252, 0.38), rgba(125, 211, 252, 0));
+  pointer-events: none;
+}
+
+.user-dashboard__eyebrow {
+  position: relative;
+  z-index: 1;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ocean);
+  margin-bottom: var(--space-3);
+}
+
+.user-dashboard__title {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(var(--font-size-3xl), 4vw, var(--font-size-4xl));
+  font-weight: var(--font-weight-bold);
+  color: var(--color-navy-deep);
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-3);
+}
+
+.user-dashboard__lede {
+  position: relative;
+  z-index: 1;
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-600);
+  max-width: 48rem;
+  line-height: var(--line-height-relaxed);
+}
+
+.user-dashboard__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.user-dashboard__section-head h2 {
+  font-size: clamp(var(--font-size-xl), 2.2vw, var(--font-size-2xl));
+  color: var(--color-navy-deep);
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.02em;
+}
+
+.user-dashboard__section-head p {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+
+@media (max-width: 760px) {
+  .user-dashboard__hero {
+    padding: var(--space-7);
+  }
+}

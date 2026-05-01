@@ -77,3 +77,9 @@ def change_plan(
     sub = change_subscription_plan(db, client_id, new_plan_id)
     create_payment(db, client_id=client_id, subscription_id=sub.id, status="paid")
     return sub
+
+
+@router.get("/all", response_model=list[SubscriptionOut])
+def list_all(db: Session = Depends(get_db), _super: User = Depends(require_superadmin)):
+    return db.query(Subscription).all()
+

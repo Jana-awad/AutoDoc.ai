@@ -12,6 +12,7 @@ def ensure_client_can_add_user(db: Session, client_id: int) -> None:
         # No subscription data yet, so skip enforcing user limits.
         return
 
+
     max_users = sub.plan.max_users
 
     # treat very large as unlimited (or if you later allow NULL)

@@ -61,7 +61,33 @@
 .e-security-alert-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 6px 0 0;
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(10, 22, 40, 0.25) transparent;
+}
+
+.e-security-alert-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.e-security-alert-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.e-security-alert-list::-webkit-scrollbar-thumb {
+  background: rgba(10, 22, 40, 0.18);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.e-security-alert-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(10, 22, 40, 0.32);
+  background-clip: padding-box;
+  border: 2px solid transparent;
 }
 
 .e-security-alert {
