@@ -12,6 +12,7 @@ import {
   resetClientApiKey,
   changeClientPlan,
 } from "../../services/clientsPlansApi";
+import { fetchClient360 } from "../../services/superHubApi";
 import ClientsPlansStatsCards from "./components/ClientsPlansStatsCards";
 import ClientsPlansTable from "./components/ClientsPlansTable";
 import ClientDetailsDrawer from "./components/ClientDetailsDrawer";
@@ -51,6 +52,8 @@ function ClientsPlans() {
   const [drawerClientId, setDrawerClientId] = useState(null);
   const [detailsData, setDetailsData] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [client360, setClient360] = useState(null);
+  const [client360Loading, setClient360Loading] = useState(false);
   const [actionMenuClientId, setActionMenuClientId] = useState(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
@@ -133,6 +136,29 @@ function ClientsPlans() {
     };
   }, [drawerClientId, token]);
 
+  useEffect(() => {
+    if (!drawerClientId || !token) {
+      setClient360(null);
+      return;
+    }
+    let cancelled = false;
+    setClient360Loading(true);
+    setClient360(null);
+    fetchClient360({ clientId: drawerClientId, token })
+      .then((data) => {
+        if (!cancelled) setClient360(data);
+      })
+      .catch(() => {
+        if (!cancelled) setClient360(null);
+      })
+      .finally(() => {
+        if (!cancelled) setClient360Loading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [drawerClientId, token]);
+
   const handleRowClick = useCallback((row) => {
     setDrawerClientId(row.id);
     setActionMenuClientId(null);
@@ -201,6 +227,12 @@ function ClientsPlans() {
     navigate("/super");
   }, [navigate]);
 
+  const handleTenantLens = useCallback(() => {
+    if (detailsData?.id) {
+      navigate(`/super/clients/${detailsData.id}/lens`);
+    }
+  }, [detailsData?.id, navigate]);
+
   const handleDeleteClient = useCallback(async () => {
     if (!drawerClientId || !token) return;
     await deleteClient({ clientId: drawerClientId, token });
@@ -218,7 +250,7 @@ function ClientsPlans() {
         onLogout={() => {}}
         onSettings={() => {}}
       />
-      <main className="super-clients-plans-main">
+      <main id="main-content" className="super-clients-plans-main" role="main">
         <div className="super-clients-plans-container">
           <header className="cp-header">
             <div className="cp-header-left">
@@ -293,6 +325,9 @@ function ClientsPlans() {
         onClose={() => setDrawerClientId(null)}
         data={detailsData}
         loading={detailsLoading}
+        client360={client360}
+        client360Loading={client360Loading}
+        onTenantLens={handleTenantLens}
         onUpgradePlan={handleUpgradePlan}
         onResetApiKey={handleResetApiKey}
         onManageUsers={handleManageUsers}

@@ -1,3 +1,24 @@
+.user-app__skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 9999;
+  padding: 10px 14px;
+  background: var(--color-navy-deep);
+  color: white;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform 0.2s ease;
+}
+
+.user-app__skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--color-ocean);
+  outline-offset: 2px;
+}
+
 .user-app {
   --user-accent: #3b82c6;
   --user-surface: rgba(255, 255, 255, 0.85);
@@ -35,10 +56,26 @@
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.72));
   border: 1px solid rgba(148, 163, 184, 0.3);
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
-  display: grid;
-  place-items: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    opacity 0.22s ease,
+    visibility 0.22s ease;
   backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+/* Sidebar sits above this button (z-index); hide while open so it never covers nav links */
+.user-app--sidebar-open .user-app__menu-btn {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .user-app__menu-btn:hover {
@@ -47,31 +84,23 @@
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.8));
 }
 
+/* Three bars drawn inside a fixed box so flex centers the whole glyph in the square */
 .user-app__menu-icon {
+  display: block;
   width: 22px;
-  height: 2px;
-  background: var(--color-navy-deep);
+  height: 14px;
+  flex-shrink: 0;
+  background-image:
+    linear-gradient(var(--color-navy-deep), var(--color-navy-deep)),
+    linear-gradient(var(--color-navy-deep), var(--color-navy-deep)),
+    linear-gradient(var(--color-navy-deep), var(--color-navy-deep));
+  background-size: 100% 2px;
+  background-position:
+    center top,
+    center center,
+    center bottom;
+  background-repeat: no-repeat;
   border-radius: 2px;
-  position: relative;
-}
-
-.user-app__menu-icon::before,
-.user-app__menu-icon::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  width: 22px;
-  height: 2px;
-  background: var(--color-navy-deep);
-  border-radius: 2px;
-}
-
-.user-app__menu-icon::before {
-  top: -7px;
-}
-
-.user-app__menu-icon::after {
-  top: 7px;
 }
 
 .user-app__backdrop {

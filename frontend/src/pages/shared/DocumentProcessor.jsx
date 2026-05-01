@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../components/Toast";
 import { fetchTemplates } from "../../services/templatesApi";
 import {
   deleteDocument,
@@ -104,6 +105,7 @@ function Banner({ kind, message, onClose }) {
  */
 function DocumentProcessor({ NavComponent, theme = "enterprise", brand = "Enterprise" }) {
   const { token, role } = useAuth();
+  const { push: pushToast } = useToast();
   const canInspectTemplate = role === "super_admin";
 
   const [templates, setTemplates] = useState([]);
@@ -218,21 +220,20 @@ function DocumentProcessor({ NavComponent, theme = "enterprise", brand = "Enterp
       ]);
 
       setActiveDoc({ id: doc.id, summary, extractions });
-      setBanner({
-        kind: "success",
-        message: `Document #${doc.id} processed. ${
-          extractions?.length || 0
-        } fields extracted.`,
-      });
-      // Refresh history (silently)
+      const msg = `Document #${doc.id} processed. ${
+        extractions?.length || 0
+      } fields extracted.`;
+      setBanner({ kind: "success", message: msg });
+      pushToast({ type: "success", title: "Document processed", message: msg });
       loadHistory();
     } catch (err) {
       setBanner({ kind: "error", message: err.message });
+      pushToast({ type: "error", title: "Processing failed", message: err.message });
     } finally {
       setBusy(false);
       setPhase(null);
     }
-  }, [file, templateId, token, loadHistory]);
+  }, [file, templateId, token, loadHistory, pushToast]);
 
   // -------------------------------------------------------- history actions
   const viewDocument = useCallback(
@@ -265,15 +266,18 @@ function DocumentProcessor({ NavComponent, theme = "enterprise", brand = "Enterp
           fetchDocumentExtractions(doc.id, { token }),
         ]);
         setActiveDoc({ id: doc.id, summary, extractions });
-        setBanner({ kind: "success", message: `Document #${doc.id} re-processed.` });
+        const msg = `Document #${doc.id} re-processed.`;
+        setBanner({ kind: "success", message: msg });
+        pushToast({ type: "success", title: "Re-processed", message: msg });
         loadHistory();
       } catch (err) {
         setBanner({ kind: "error", message: err.message });
+        pushToast({ type: "error", title: "Re-process failed", message: err.message });
       } finally {
         setBusyDocId(null);
       }
     },
-    [loadHistory, token]
+    [loadHistory, token, pushToast]
   );
 
   const removeDocument = useCallback(

@@ -10,6 +10,7 @@ import logging
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.crud.crud_platform_config import get_platform_config
 from app.crud.crud_document import (
     delete_extractions_for_document,
     get_document,
@@ -30,6 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 def run_document_processing(db: Session, document_id: int) -> int:
+    pc = get_platform_config(db)
+    if not pc.document_processing_enabled:
+        raise ValueError("Document processing is disabled platform-wide by operators.")
     doc = get_document(db, document_id)
     if not doc:
         raise ValueError(f"Document {document_id} not found")
@@ -67,7 +71,7 @@ def run_document_processing(db: Session, document_id: int) -> int:
             )
 
         cleaned = clean_ocr_text(ocr_text)
-        extraction_result = extract_with_llm(cleaned, context)
+        extraction_result = extract_with_llm(cleaned, context, db=db)
 
         logger.info(
             "LLM extraction done document_id=%s keys=%s",

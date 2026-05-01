@@ -1,0 +1,59 @@
+.errboundary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: 18px;
+  background: rgba(254, 242, 242, 0.85);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #991b1b;
+}
+
+.errboundary__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(248, 113, 113, 0.25);
+  color: #b91c1c;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.errboundary__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.errboundary__title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+
+.errboundary__message {
+  font-size: var(--font-size-sm);
+  color: #7f1d1d;
+  word-break: break-word;
+}
+
+.errboundary__retry {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  background: white;
+  color: #b91c1c;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.errboundary__retry:hover {
+  background: #fef2f2;
+}

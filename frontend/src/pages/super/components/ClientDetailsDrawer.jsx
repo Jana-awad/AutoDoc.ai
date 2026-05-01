@@ -40,6 +40,9 @@ function ClientDetailsDrawer({
   onClose,
   data,
   loading,
+  client360,
+  client360Loading,
+  onTenantLens,
   onUpgradePlan,
   onResetApiKey,
   onManageUsers,
@@ -202,7 +205,46 @@ function ClientDetailsDrawer({
                 </div>
               </section>
 
+              <section className="cp-drawer-section">
+                <h3 className="cp-drawer-section__title">Documents &amp; billing snapshot</h3>
+                {client360Loading ? (
+                  <div className="cp-drawer__loading">Loading extended snapshot…</div>
+                ) : client360?.documents ? (
+                  <div className="cp-drawer-rows">
+                    <div className="cp-drawer-row">
+                      <span className="cp-drawer-row__label">Documents (total)</span>
+                      <span className="cp-drawer-row__value">{client360.documents.total ?? 0}</span>
+                    </div>
+                    <div className="cp-drawer-row">
+                      <span className="cp-drawer-row__label">Completed</span>
+                      <span className="cp-drawer-row__value">{client360.documents.completed ?? 0}</span>
+                    </div>
+                    <div className="cp-drawer-row">
+                      <span className="cp-drawer-row__label">Failed</span>
+                      <span className="cp-drawer-row__value">{client360.documents.failed ?? 0}</span>
+                    </div>
+                    <div className="cp-drawer-row">
+                      <span className="cp-drawer-row__label">Webhook URL</span>
+                      <span className="cp-drawer-row__value">
+                        {client360.webhook?.configured ? "Configured" : "Not set"}
+                      </span>
+                    </div>
+                    <div className="cp-drawer-row">
+                      <span className="cp-drawer-row__label">Recent payments</span>
+                      <span className="cp-drawer-row__value">{(client360.payments || []).length}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="cp-drawer-users-empty">Extended snapshot unavailable.</div>
+                )}
+              </section>
+
               <footer className="cp-drawer__footer">
+                {onTenantLens && (
+                  <button type="button" className="cp-drawer-btn cp-drawer-btn--secondary" onClick={onTenantLens}>
+                    Open read-only tenant lens
+                  </button>
+                )}
                 {onManageUsers && (
                   <button type="button" className="cp-drawer-btn cp-drawer-btn--primary" onClick={onManageUsers}>
                     Manage Client Users
