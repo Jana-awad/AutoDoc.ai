@@ -10,7 +10,11 @@ function BDashboardCard({ title, subtitle, actions, className = "", children }) 
           {actions && <div className="bdashboard-card__actions">{actions}</div>}
         </header>
       )}
-      <div className="bdashboard-card__body">{children}</div>
+      <div className="bdashboard-card__body">
+        <div className="bdashboard-card__body-scroll">
+          <div className="bdashboard-card__body-content">{children}</div>
+        </div>
+      </div>
     </section>
   );
 }

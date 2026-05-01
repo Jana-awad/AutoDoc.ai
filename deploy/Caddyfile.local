@@ -48,10 +48,9 @@ localhost:443 {
 
 	# Frontend dev server (Vite). websockets are needed for HMR.
 	handle {
-		# Vite uses strictPort=false and may hop from 5173 -> 5174 if 5173 is busy.
-		# List both so the proxy keeps working without edits.
-		# Use localhost (often ::1 on Windows) since Vite may bind IPv6-only.
-		reverse_proxy localhost:5173 localhost:5174 {
+		# We start Vite explicitly on :5173 (see npm run dev args).
+		# If you change the Vite port, update this upstream accordingly.
+		reverse_proxy localhost:5173 {
 			header_up X-Forwarded-Proto https
 			header_up X-Forwarded-Host  {host}
 		}

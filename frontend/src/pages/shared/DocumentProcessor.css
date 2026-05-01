@@ -429,15 +429,36 @@
 
 /* ----- History table ----- */
 .docproc-table-wrap {
-  overflow-x: auto;
+  overflow: auto; /* vertical scroll + horizontal if needed */
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.docproc-card--history {
+  /* Keep "Recent documents" panel a fixed size with internal scrolling. */
+  /* Taller so ~3–4 rows show before scrolling. */
+  height: var(--docproc-history-height, clamp(340px, 48vh, 560px));
+  display: flex;
+  flex-direction: column;
+}
+
+.docproc-card--history .docproc-table-wrap {
+  flex: 1;
+  min-height: 0; /* allow child scroll container to shrink */
+}
+
+.docproc-card--history .docproc-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .docproc-table {
   width: 100%;
   border-collapse: collapse;
   background: white;
+  table-layout: fixed;
 }
 
 .docproc-table th,
@@ -446,15 +467,45 @@
   text-align: left;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   font-size: 0.9rem;
+  vertical-align: middle;
 }
 
 .docproc-table th {
-  background: rgba(0, 0, 0, 0.02);
   color: var(--color-gray-600, #475569);
   font-weight: 600;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+/* Prevent header/content overlap by enforcing column sizing & truncation. */
+.docproc-table th,
+.docproc-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.docproc-table th:nth-child(1),
+.docproc-table td:nth-child(1) {
+  width: 74px; /* ID */
+}
+
+.docproc-table th:nth-child(3),
+.docproc-table td:nth-child(3) {
+  width: 110px; /* Status */
+}
+
+.docproc-table th:nth-child(4),
+.docproc-table td:nth-child(4) {
+  width: 190px; /* Uploaded */
+}
+
+.docproc-table th:nth-child(5),
+.docproc-table td:nth-child(5) {
+  width: 320px; /* Actions (keep 3 buttons in one row) */
 }
 
 .docproc-table tbody tr:last-child td {
@@ -464,37 +515,75 @@
 .docproc-row-actions {
   display: flex;
   gap: 6px;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .docproc-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  gap: 8px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 8px;
   border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: white;
-  color: var(--color-gray-600, #475569);
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--color-navy-deep, #0f172a);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease,
+    box-shadow 0.15s ease;
 }
 
 .docproc-icon-btn:hover:not(:disabled) {
   background: rgba(37, 99, 235, 0.08);
   border-color: rgba(37, 99, 235, 0.3);
   color: var(--color-ocean, #2563eb);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.14);
+  transform: translateY(-1px);
+}
+
+.docproc-icon-btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 2px;
+}
+
+.docproc-icon-btn__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: currentColor;
 }
 
 .docproc-icon-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .docproc-icon-btn--danger:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.3);
   color: #b91c1c;
+  box-shadow: 0 10px 20px rgba(239, 68, 68, 0.12);
+}
+
+@media (max-width: 720px) {
+  /* Keep actions compact on small screens: icon-only buttons. */
+  .docproc-icon-btn {
+    padding: 0;
+    width: 34px;
+  }
+  .docproc-icon-btn__label {
+    display: none;
+  }
 }
 
 /* ----- Misc helpers ----- */

@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "../api/config";
+import { notifySessionExpired } from "../context/AuthContext";
 
 const API_BASE = `${getApiBaseUrl()}/v1/business`;
 
@@ -30,6 +31,10 @@ const requestJson = async (path, { method = "GET", token, signal, body } = {}) =
 
   const response = await fetch(path, options);
   if (response.status === 204) return null;
+
+  if (response.status === 401) {
+    notifySessionExpired("unauthorized");
+  }
 
   const payload = await response.json().catch(() => null);
 

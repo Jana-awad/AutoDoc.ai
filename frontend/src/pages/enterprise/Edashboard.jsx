@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import "../../components/variables.css";
 import "../../components/global.css";
-import EnterpriseNav from "../../components/EnterpriseNav";
+import Enavbar from "../../components/Enavbar";
 import EDashboardHeader from "../../components/EDashboardHeader";
 import EMetricsGrid from "../../components/EMetricsGrid";
 import ETopActiveUsers from "../../components/ETopActiveUsers";
@@ -16,14 +16,9 @@ import ESecurityAccess from "../../components/ESecurityAccess";
 import "./Edashboard.css";
 
 function EDashboard() {
-  const navigate = useNavigate();
   return (
     <div className="enterprise-dashboard">
-      <EnterpriseNav
-        userName="Enterprise Admin"
-        userEmail="admin@autodoc.ai"
-        onSettings={() => navigate("/enterprise/profile/settings")}
-      />
+      <Enavbar />
       <main id="main-content" className="enterprise-dashboard-main">
         <EDashboardHeader />
 

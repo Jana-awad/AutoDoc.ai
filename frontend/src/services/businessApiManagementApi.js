@@ -2,6 +2,8 @@
  * Business API Management - central service for API keys, webhooks, logs, usage, health, security.
  * Same shape as enterprise; endpoints expect backend under /api/v1/business/api
  */
+import { notifySessionExpired } from "../context/AuthContext";
+
 const BASE = `${(import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")}/api/v1/business/api`;
 
 const buildHeaders = (token, extra = {}) => {
@@ -22,6 +24,9 @@ const fetchJson = async (path, { token, signal, method = "GET", body } = {}) => 
     signal,
     ...(body != null && { body: JSON.stringify(body) }),
   });
+  if (response.status === 401) {
+    notifySessionExpired("unauthorized");
+  }
   if (!response.ok) {
     const err = new Error(`Request failed: ${response.status}`);
     err.status = response.status;
@@ -87,6 +92,9 @@ export const getRequestLogsExportUrl = ({ format = "csv", search, status } = {})
 export const downloadRequestLogs = async ({ token, signal, format = "csv", search, status } = {}) => {
   const url = getRequestLogsExportUrl({ format, search, status });
   const response = await fetch(url, { headers: buildHeaders(token), signal });
+  if (response.status === 401) {
+    notifySessionExpired("unauthorized");
+  }
   if (!response.ok) throw new Error(`Export failed: ${response.status}`);
   return response.blob();
 };

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../components/variables.css";
 import "../../components/global.css";
-import EnterpriseNav from "../../components/EnterpriseNav";
+import Enavbar from "../../components/Enavbar";
 import { useAuth } from "../../context/AuthContext";
 import {
   fetchApiKeys,
@@ -416,11 +416,7 @@ function Api() {
 
   return (
     <div className="enterprise-api">
-      <EnterpriseNav
-        userName="Enterprise Admin"
-        userEmail="admin@autodoc.ai"
-        onSettings={() => navigate("/enterprise/profile/settings")}
-      />
+      <Enavbar />
       <main id="main-content" className="enterprise-api-main">
         <header className="enterprise-api-header">
           <h1 className="enterprise-api-title">API management</h1>

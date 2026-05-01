@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import "../../components/variables.css";
-import EnterpriseNav from "../../components/EnterpriseNav";
+import Enavbar from "../../components/Enavbar";
 import { useAuth } from "../../context/AuthContext";
 import {
   buildTemplatePayload,
@@ -275,13 +275,7 @@ function TemplatesAi() {
 
   return (
     <div className="super-templates-ai">
-      <EnterpriseNav
-        userName="Enterprise Admin"
-        userEmail="admin@autodoc.ai"
-        onLogout={() => {}}
-        onSettings={() => navigate("/enterprise/profile/settings")}
-        onSearch={() => {}}
-      />
+      <Enavbar />
       <main id="main-content" className="super-templates-ai-main" role="main">
         <div className="super-templates-ai-container">
           <header className="super-templates-ai-header">

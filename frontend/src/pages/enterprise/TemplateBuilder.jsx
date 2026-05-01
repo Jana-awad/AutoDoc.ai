@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 import "../../components/variables.css";
-import EnterpriseNav from "../../components/EnterpriseNav";
+import Enavbar from "../../components/Enavbar";
 import { useAuth } from "../../context/AuthContext";
 import {
   builderResponseToFormState,
@@ -521,12 +521,7 @@ function TemplateBuilder() {
 
   return (
     <div className="super-template-builder">
-      <EnterpriseNav
-        userName="Enterprise Admin"
-        userEmail="admin@autodoc.ai"
-        onLogout={() => {}}
-        onSettings={() => navigate("/enterprise/profile/settings")}
-      />
+      <Enavbar />
       <main id="main-content" className="super-template-builder-main" role="main">
         <div className="tpl-ai-container">
           <motion.header

@@ -514,7 +514,7 @@ function DocumentProcessor({ NavComponent, theme = "enterprise", brand = "Enterp
 
         {/* ---------- BOTTOM: history ---------- */}
         <motion.section
-          className="docproc-card"
+          className="docproc-card docproc-card--history"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
@@ -570,27 +570,33 @@ function DocumentProcessor({ NavComponent, theme = "enterprise", brand = "Enterp
                               className="docproc-icon-btn"
                               onClick={() => viewDocument(doc)}
                               disabled={busyDocId === doc.id}
+                              aria-label="View extraction"
                               title="View extraction"
                             >
                               <Eye size={14} />
+                              <span className="docproc-icon-btn__label">View</span>
                             </button>
                             <button
                               type="button"
                               className="docproc-icon-btn"
                               onClick={() => reprocess(doc)}
                               disabled={busyDocId === doc.id || doc.template_id == null}
+                              aria-label="Re-run OCR and extraction"
                               title="Re-run OCR + LLM"
                             >
                               <RotateCw size={14} />
+                              <span className="docproc-icon-btn__label">Re-run</span>
                             </button>
                             <button
                               type="button"
                               className="docproc-icon-btn docproc-icon-btn--danger"
                               onClick={() => removeDocument(doc)}
                               disabled={busyDocId === doc.id}
+                              aria-label="Delete document"
                               title="Delete document"
                             >
                               <Trash2 size={14} />
+                              <span className="docproc-icon-btn__label">Delete</span>
                             </button>
                           </div>
                         </td>

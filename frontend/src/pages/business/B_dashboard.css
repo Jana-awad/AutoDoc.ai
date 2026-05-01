@@ -190,6 +190,9 @@
   padding: var(--space-6);
   display: grid;
   gap: var(--space-5);
+  /* Keep cards the same size; long content scrolls inside the body. */
+  height: var(--bdashboard-card-height, clamp(280px, 38vh, 440px));
+  grid-template-rows: auto 1fr;
   animation: business-card-rise 0.6s ease both;
   position: relative;
   overflow: hidden;
@@ -231,6 +234,19 @@
 }
 
 .bdashboard-card__body {
+  display: grid;
+  gap: var(--space-4);
+  min-height: 0; /* allow the scroll container to shrink inside the card */
+}
+
+.bdashboard-card__body-scroll {
+  overflow: auto;
+  min-height: 0;
+  max-height: 100%;
+  padding-right: var(--space-2);
+}
+
+.bdashboard-card__body-content {
   display: grid;
   gap: var(--space-4);
 }
