@@ -1,0 +1,223 @@
+================================================================================
+  AutoDoc.ai — HTTPS dev startup guide (frontend + backend)
+================================================================================
+
+This project is configured so that, in development:
+  • The BACKEND (FastAPI / Uvicorn) listens on HTTPS at https://127.0.0.1:8000
+  • The FRONTEND (Vite) listens on HTTPS (default URL https://localhost:5173)
+  • The Vite dev server proxies browser requests from /api/* to the backend at
+    https://127.0.0.1:8000 (see frontend/vite.config.js).
+
+You need TWO terminal windows (or tabs): one for the backend, one for the
+frontend. Start the BACKEND first, then the FRONTEND.
+
+All paths below use YOUR actual clone folder. Example:
+  C:\Users\...\Desktop\senior\AutoDoc.ai
+Replace that with wherever you cloned the repo.
+
+
+--------------------------------------------------------------------------------
+  PREREQUISITES (one-time per machine / clone)
+--------------------------------------------------------------------------------
+
+1) Python 3 with a virtual environment for the backend
+   - From the repo root, the backend venv is usually at:
+       backend\.venv\
+   - If you do not have it yet, create it and install dependencies:
+       cd backend
+       python -m venv .venv
+       .\.venv\Scripts\activate
+       pip install -r requirements.txt
+
+2) Node.js (LTS recommended) and npm for the frontend
+   - From the repo root:
+       cd frontend
+       npm install
+
+3) Optional but strongly recommended: mkcert (for a browser-trusted frontend)
+   - Install mkcert (e.g. winget: FiloSottile.mkcert, or Chocolatey, or the
+     official GitHub releases).
+   - Run ONCE as Administrator so the local CA is trusted:
+       mkcert -install
+   - If you skip mkcert, Vite still serves HTTPS using @vitejs/plugin-basic-ssl,
+     but Chrome will show "Your connection is not private" until you click
+     Advanced → Proceed to localhost.
+
+
+--------------------------------------------------------------------------------
+  PART A — BACKEND (HTTPS on port 8000)
+--------------------------------------------------------------------------------
+
+A1) Open a terminal and go to the backend folder:
+
+    cd <path-to-repo>\backend
+
+A2) Activate the virtual environment (Windows PowerShell or CMD):
+
+    PowerShell / CMD:
+      .\.venv\Scripts\activate
+
+A3) Create TLS certificate files (only needed the first time, or if you deleted
+    the dev-certs folder). This script writes TWO files used by Uvicorn:
+
+      python scripts\generate_dev_tls.py
+
+    That creates:
+      backend\dev-certs\localhost-key.pem
+      backend\dev-certs\localhost-cert.pem
+
+    These are self-signed (not signed by mkcert). The browser will still warn
+    if you open https://127.0.0.1:8000 directly, unless you trust that cert in
+    the OS. For normal SPA use through Vite, the proxy is set to accept this
+    backend cert (secure: false on the proxy).
+
+A4) Start Uvicorn with TLS (HTTPS). Use exactly these flags so the server binds
+    to 127.0.0.1:8000 with the PEM files from step A3:
+
+    uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 ^
+      --ssl-keyfile dev-certs/localhost-key.pem ^
+      --ssl-certfile dev-certs/localhost-cert.pem
+
+    (In PowerShell you can use backtick ` for line continuation instead of ^.)
+
+    If you prefer calling the venv executable without activating:
+
+    .\.venv\Scripts\uvicorn.exe app.main:app --reload --host 127.0.0.1 --port 8000 ^
+      --ssl-keyfile dev-certs/localhost-key.pem ^
+      --ssl-certfile dev-certs/localhost-cert.pem
+
+A5) Confirm in the terminal log:
+
+    Uvicorn running on https://127.0.0.1:8000
+
+A6) Useful URLs (backend must be running):
+    • API root:     https://127.0.0.1:8000/
+    • OpenAPI docs: https://127.0.0.1:8000/docs
+
+A7) Backend environment (.env)
+    If the app needs a database or API keys, configure backend\.env as required
+    by your team (see backend README). HTTPS startup above is independent of
+    .env, but the API may fail at runtime without the right variables.
+
+
+--------------------------------------------------------------------------------
+  PART B — FRONTEND (HTTPS, usually port 5173)
+--------------------------------------------------------------------------------
+
+B1) Open a SECOND terminal and go to the frontend folder:
+
+    cd <path-to-repo>\frontend
+
+B2) How Vite chooses HTTPS certificates (in order):
+
+    (1) If frontend\.env.local defines BOTH variables with paths to existing PEM
+        files (absolute paths OR paths relative to the frontend\ folder):
+          DEV_SSL_KEY_FILE=...path-to-private-key.pem...
+          DEV_SSL_CERT_FILE=...path-to-certificate.pem...
+        then Vite uses those files and does NOT use basic-ssl.
+
+    (2) ELSE if BOTH of these files exist:
+          frontend\dev-certs\ssl-key.pem
+          frontend\dev-certs\ssl-cert.pem
+        then Vite uses them (recommended for mkcert).
+
+    (3) ELSE Vite uses @vitejs/plugin-basic-ssl (HTTPS, but Chrome warns until
+        you proceed past the warning).
+
+B3) Recommended: mkcert files for a trusted green lock in Chrome
+
+    B3a) Create the folder if needed:
+
+         mkdir dev-certs
+         cd dev-certs
+
+    B3b) Generate a cert for localhost and 127.0.0.1 (run from dev-certs):
+
+         mkcert localhost 127.0.0.1
+
+         mkcert prints two filenames, typically:
+           something-key.pem   (private key)
+           something.pem       (certificate)
+
+    B3c) Copy or rename them EXACTLY to the names Vite looks for (still inside
+         frontend\dev-certs\):
+
+         ssl-key.pem   ← copy from the *-key.pem file mkcert created
+         ssl-cert.pem  ← copy from the other .pem (the certificate)
+
+    B3d) Go back to frontend root:
+
+         cd ..
+
+B4) Start the dev server:
+
+    npm run dev
+
+B5) In the terminal you should see something like:
+
+    VITE v... ready
+    Local:   https://localhost:5173/
+
+B6) Open the app in the browser:
+
+    https://localhost:5173/
+
+    With mkcert + ssl-key.pem / ssl-cert.pem as above, the connection should be
+    trusted. With basic-ssl only, use Advanced → Proceed to localhost.
+
+
+--------------------------------------------------------------------------------
+  WHY ORDER MATTERS
+--------------------------------------------------------------------------------
+
+The frontend proxies /api to https://127.0.0.1:8000. If the backend is not
+running or is not using HTTPS on that address, API calls from the SPA will fail
+and you may see warnings in the Vite terminal about the proxy.
+
+
+--------------------------------------------------------------------------------
+  STOPPING THE SERVERS
+--------------------------------------------------------------------------------
+
+In each terminal where a server is running, press Ctrl+C.
+
+Or (PowerShell) to stop whatever is listening on the usual dev ports:
+
+    5173,5174,8000 | ForEach-Object {
+      Get-NetTCPConnection -LocalPort $_ -ErrorAction SilentlyContinue |
+        ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+    }
+
+
+--------------------------------------------------------------------------------
+  QUICK REFERENCE — URLs
+--------------------------------------------------------------------------------
+
+  Frontend (Vite):     https://localhost:5173/
+  Backend API:         https://127.0.0.1:8000/
+  Backend Swagger UI:  https://127.0.0.1:8000/docs
+
+
+--------------------------------------------------------------------------------
+  TROUBLESHOOTING (short)
+--------------------------------------------------------------------------------
+
+  • "Your connection is not private" on https://localhost:5173
+      → Use mkcert + ssl-key.pem / ssl-cert.pem as in Part B3, or proceed
+        through the warning if you are using basic-ssl only.
+
+  • Vite proxy errors / API unreachable
+      → Ensure backend is running with HTTPS on 127.0.0.1:8000 (Part A).
+
+  • Port already in use (5173 or 8000)
+      → Stop the old process (see STOPPING THE SERVERS) or change the port in
+        your command (not covered here; default setup uses 8000 and 5173).
+
+  • Regenerating backend TLS files
+      → Run again:  python scripts\generate_dev_tls.py
+        from the backend folder (with venv activated).
+
+
+================================================================================
+  End of guide
+================================================================================
