@@ -23,7 +23,7 @@ import {
 import "../../components/variables.css";
 import SuperNav from "../../components/SuperNav";
 import { useAuth } from "../../context/AuthContext";
-import {
+import { //  import all the functions from the templatesApi.js file that are in need
   builderResponseToFormState,
   buildTemplatePayload,
   createTemplateFromBuilder,
@@ -59,22 +59,22 @@ const STATUS_OPTIONS = [
   { value: "archived", label: "Archived" },
 ];
 
-function createDefaultField(order = 0) {
+function createDefaultField(order = 0) { // this function is used to create a default field w order =0 bcz there is no args
   return {
-    id: crypto.randomUUID?.() ?? `f-${Date.now()}-${order}`,
-    name: "",
-    display_label: "",
-    data_type: "string",
-    required: false,
-    document_position: "Middle",
-    extraction_hint: "",
-    example_value: "",
-    validation_rules: "",
-    field_order: order,
+    id: crypto.randomUUID?.() ?? `f-${Date.now()}-${order}`, // this is used to create a unique id for the field - crypto.randomUUID is a function that creates a unique id for the field - Date.now() is a function that returns the current date and time - order is the order of the field - ?? nuliish caolescing use rhs only if lhs is null aw undefined
+    name: "", // the name of the field
+    display_label: "", // the display label of the field
+    data_type: "string", // the data type of the field
+    required: false, // whether the field is required
+    document_position: "Middle", // the document position of the field can be changed in ui
+    extraction_hint: "", // the extraction hint of the field
+    example_value: "", // the example value of the field
+    validation_rules: "", // the validation rules of the field
+    field_order: order, // the order of the field
   };
 }
 
-const getInitialState = () => ({
+const getInitialState = () => ({// this function is used to get the initial state of the template builder
   id: null,
   template_key: "",
   name: "",
@@ -98,24 +98,24 @@ const getInitialState = () => ({
   },
 });
 
-function FieldCard({ field, index, onUpdate, onRemove, onMove, canRemove, totalFields }) {
-  const update = useCallback(
+function FieldCard({ field, index, onUpdate, onRemove, onMove, canRemove, totalFields }) { // this function is used to create a field card
+  const update = useCallback( // this function is used to update the field card
     (key, value) => {
-      onUpdate(index, { ...field, [key]: value, field_order: index });
+      onUpdate(index, { ...field, [key]: value, field_order: index }); // this is used to update the field card
     },
-    [index, field, onUpdate]
+    [index, field, onUpdate] // this is used to update the field card
   );
 
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.25 }}
-      className="tpl-ai-field-card"
+  return ( // this is used to return the field card
+    <motion.div // this is used to animate the field card
+      layout // this is used to layout the field card
+      initial={{ opacity: 0, y: 12 }} // this is used to animate the field card
+      animate={{ opacity: 1, y: 0 }} // this is used to animate the field card
+      exit={{ opacity: 0, x: -20 }} // this is used to animate the field card
+      transition={{ duration: 0.25 }} // this is used to animate the field card
+      className="tpl-ai-field-card" // this is used to style the field card
     >
-      <div className="tpl-ai-field-card-header">
+      <div className="tpl-ai-field-card-header"> 
         <span className="tpl-ai-field-card-drag" aria-hidden>
           <GripVertical size={18} />
         </span>

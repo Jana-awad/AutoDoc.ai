@@ -137,36 +137,6 @@ const defaultMegaMenus = {
       },
     ],
   },
-  clients: {
-    title: 'Clients & Plans',
-    description: 'Manage accounts, subscriptions, and success.',
-    columns: [
-      {
-        heading: 'Client Management',
-        items: [
-          { title: 'Client Directory', description: 'View and segment client accounts.', path: '/super/clients-plans', icon: <ClientsIcon /> },
-          { title: 'Team Access', description: 'Invite admins and manage roles.', path: '/super/clients-plans', icon: <ShieldIcon /> },
-          { title: 'Usage Insights', description: 'Track adoption at a glance.', path: '/super/clients-plans', icon: <MonitorIcon /> },
-        ],
-      },
-      {
-        heading: 'Plans',
-        items: [
-          { title: 'Plan Builder', description: 'Configure tiers and limits.', path: '/super/clients-plans', icon: <BillingIcon /> },
-          { title: 'Billing Controls', description: 'Manage renewals and invoices.', path: '/super/clients-plans', icon: <BillingIcon /> },
-          { title: 'Entitlements', description: 'Define feature access by plan.', path: '/super/clients-plans', icon: <ShieldIcon /> },
-        ],
-      },
-      {
-        heading: 'Success',
-        items: [
-          { title: 'Onboarding', description: 'Guide new customers quickly.', path: '/super/clients-plans', icon: <PipelineIcon /> },
-          { title: 'Health Scores', description: 'Spot churn risks early.', path: '/super/clients-plans', icon: <MonitorIcon /> },
-          { title: 'Support Queue', description: 'Escalate issues instantly.', path: '/super/clients-plans', icon: <ShieldIcon /> },
-        ],
-      },
-    ],
-  },
 };
 
 function buildCommandDestinations(navLinks) {
@@ -222,7 +192,8 @@ const SuperNav = ({
     () => [
       { name: 'Dashboard', path: '/super', mega: 'dashboard' },
       { name: 'Template & AI', path: '/super/templates-ai', mega: 'templates' },
-      { name: 'Clients & Plans', path: '/super/clients-plans', mega: 'clients' },
+      // Direct link (no hover dropdown) per super navbar behavior request.
+      { name: 'Clients & Plans', path: '/super/clients-plans' },
       { name: 'Operations', path: '/super/operations' },
       { name: 'Monitoring', path: '/super/monitoring' },
     ],

@@ -82,6 +82,13 @@ export const updateTemplateFromBuilder = (id, payload, { token, signal } = {}) =
     signal,
   });
 
+/**
+ * Lightweight metadata update (status, name, etc.).
+ * Useful for actions like archive/unarchive without sending full builder payload.
+ */
+export const updateTemplate = (id, payload, { token, signal } = {}) =>
+  requestJson(`${API_BASE}/${id}`, { method: "PUT", token, body: payload, signal });
+
 export const deleteTemplate = (id, { token, signal } = {}) =>
   requestJson(`${API_BASE}/${id}`, { method: "DELETE", token, signal });
 

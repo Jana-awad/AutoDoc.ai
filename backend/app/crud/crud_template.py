@@ -65,9 +65,18 @@ def list_templates_for_user(db: Session, user: User) -> list[Template]:
     - enterprise_admin / regular user with client_id: global + client templates
     - super_admin / no client: every template
     """
+    # Archived templates are hidden from non-super users so they can't pick them
+    # during uploads / processing flows. Super admin can still list them for management.
+    hide_archived = user.role != UserRole.SUPER_ADMIN
+    base_query = db.query(Template)
+    if hide_archived:
+        base_query = base_query.filter(
+            func.lower(func.coalesce(Template.status, "active")) != "archived"
+        )
+
     if user.role == UserRole.BUSINESS_ADMIN:
         return (
-            db.query(Template)
+            base_query
             .filter(Template.is_global.is_(True))
             .order_by(Template.id.desc())
             .all()
@@ -75,13 +84,13 @@ def list_templates_for_user(db: Session, user: User) -> list[Template]:
 
     if user.client_id is not None:
         return (
-            db.query(Template)
+            base_query
             .filter(or_(Template.is_global.is_(True), Template.client_id == user.client_id))
             .order_by(Template.id.desc())
             .all()
         )
 
-    return db.query(Template).order_by(Template.id.desc()).all()
+    return base_query.order_by(Template.id.desc()).all()
 
 
 def delete_template(db: Session, template: Template) -> None:

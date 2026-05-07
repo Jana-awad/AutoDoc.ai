@@ -7,7 +7,7 @@
 .super-ai-overview::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: 0; /* have to do with offset*/
   background: var(--gradient-glow);
   pointer-events: none;
   z-index: 0;
@@ -180,9 +180,56 @@
 .ai-overview-int-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
   color: var(--color-navy-medium);
+}
+
+.ai-overview-int-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.ai-overview-int-toggle {
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(255, 255, 255, 0.75);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.ai-overview-int-toggle:hover,
+.ai-overview-int-toggle:focus-visible {
+  border-color: rgba(59, 130, 198, 0.7);
+  box-shadow: 0 0 0 3px rgba(59, 130, 198, 0.16);
+}
+
+.ai-overview-int-toggle svg {
+  transition: transform 180ms ease;
+}
+
+.ai-overview-int-toggle[aria-expanded="false"] svg {
+  transform: rotate(-90deg);
+}
+
+.ai-overview-int-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 220ms ease;
+}
+
+.ai-overview-int-body.open {
+  /* large enough to reveal all content; keeps it simple and reliable */
+  max-height: 900px;
 }
 
 .ai-overview-int-head h3 {
@@ -335,6 +382,7 @@
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-6);
+  justify-items: center;
 }
 
 .ai-overview-kpi {
@@ -343,6 +391,12 @@
   border-radius: var(--radius-xl);
   border: 1px solid var(--glass-border-light);
   box-shadow: var(--shadow-sm);
+  text-align: center;
+  width: 100%;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .ai-overview-kpi-label {
@@ -393,6 +447,19 @@
   background: var(--glass-bg-light);
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-md);
+}
+
+.ai-overview-table-scroll {
+  /* Fixed viewport: shows ~6 rows, remainder via scroll */
+  max-height: 340px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ai-overview-table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .ai-overview-table-cap {

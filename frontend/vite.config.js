@@ -54,14 +54,17 @@ export default defineConfig(({ mode }) => {
         // In dev, /api/* is forwarded to backend at 127.0.0.1:8000 (strip /api prefix)
         // e.g. /api/v1/business/dashboard/metrics -> https://127.0.0.1:8000/v1/business/dashboard/metrics
         "/api": {
-          target: "https://127.0.0.1:8000",
+          // Backend is plain HTTP in dev (TLS is terminated by deploy/Caddyfile.local).
+          target: "http://127.0.0.1:8000",
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ""),
+          // Keep `secure: false` so this also works if you temporarily point `target`
+          // at an HTTPS backend with a self-signed cert.
           secure: false,
           configure: (proxy) => {
             proxy.on("error", (err, req, res) => {
               console.warn(
-                "[Vite proxy] Backend request failed. Is the backend running on https://127.0.0.1:8000?",
+                "[Vite proxy] Backend request failed. Is the backend running on http://127.0.0.1:8000?",
                 err.message,
               );
             });

@@ -36,6 +36,8 @@ from app.schemas.business_dashboard import (
 
 router = APIRouter(prefix="/v1/business/dashboard", tags=["business-dashboard"])
 
+PIPELINE_UPLOAD_ENDPOINTS = ("POST /documents/upload",)
+
 
 def _client_filter(db: Session, current_user: User):
     return current_user.client_id
@@ -61,14 +63,26 @@ def get_dashboard_metrics(
 
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     api_calls_today = (
-        db.query(ApiLog).filter(ApiLog.client_id == cid, ApiLog.created_at >= today_start).count()
+        db.query(ApiLog)
+        .filter(
+            ApiLog.client_id == cid,
+            ApiLog.created_at >= today_start,
+            ApiLog.endpoint.in_(PIPELINE_UPLOAD_ENDPOINTS),
+        )
+        .count()
     )
 
     active_users = db.query(User).filter(User.client_id == cid, User.is_active).count()
 
     month_start = datetime.now(timezone.utc) - timedelta(days=30)
     api_calls_month = (
-        db.query(ApiLog).filter(ApiLog.client_id == cid, ApiLog.created_at >= month_start).count()
+        db.query(ApiLog)
+        .filter(
+            ApiLog.client_id == cid,
+            ApiLog.created_at >= month_start,
+            ApiLog.endpoint.in_(PIPELINE_UPLOAD_ENDPOINTS),
+        )
+        .count()
     )
     remaining_quota = max(0, 10000 - api_calls_month) if api_calls_month else 10000
 
@@ -277,7 +291,11 @@ def get_api_usage(
     month_start = datetime.now(timezone.utc) - timedelta(days=30)
     logs = (
         db.query(ApiLog)
-        .filter(ApiLog.client_id == cid, ApiLog.created_at >= month_start)
+        .filter(
+            ApiLog.client_id == cid,
+            ApiLog.created_at >= month_start,
+            ApiLog.endpoint.in_(PIPELINE_UPLOAD_ENDPOINTS),
+        )
         .all()
     )
     total = len(logs)

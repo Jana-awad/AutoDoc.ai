@@ -20,7 +20,9 @@
 .super-templates-ai-main {
   position: relative;
   z-index: 1;
-  padding: calc(var(--navbar-height) + var(--space-8)) var(--container-padding) var(--space-16);
+  /* SuperNav includes an extra breadcrumbs row under the main pill.
+     Give pages enough top padding so headers never slide under it. */
+  padding: calc(var(--navbar-height) + var(--space-8) + 2.25rem) var(--container-padding) var(--space-16);
 }
 
 .super-templates-ai-container {

@@ -21,6 +21,14 @@ from app.models.template import Template
 from app.models.user import User
 
 
+PIPELINE_UPLOAD_ENDPOINTS = ("POST /documents/upload",)
+
+
+def _pipeline_upload_filter():
+    # Keep this centralized so "API calls" means the same thing everywhere.
+    return ApiLog.endpoint.in_(PIPELINE_UPLOAD_ENDPOINTS)
+
+
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -43,8 +51,12 @@ def build_key_metrics(db: Session) -> dict[str, Any]:
     denom = done_total + failed_total
     success_rate = round(100.0 * done_total / denom, 1) if denom else 100.0
 
+    # "API calls" for this SaaS == document upload calls into the pipeline.
     api_today = (
-        db.query(func.count(ApiLog.id)).filter(ApiLog.created_at >= day_start).scalar() or 0
+        db.query(func.count(ApiLog.id))
+        .filter(ApiLog.created_at >= day_start, _pipeline_upload_filter())
+        .scalar()
+        or 0
     )
 
     active_users = (
@@ -97,13 +109,17 @@ def build_top_clients(db: Session, limit: int = 8) -> list[dict[str, Any]]:
     )
     sub_err = (
         db.query(ApiLog.client_id, func.count(ApiLog.id).label("ec"))
-        .filter(ApiLog.created_at >= since, ApiLog.status_code >= 400)
+        .filter(
+            ApiLog.created_at >= since,
+            _pipeline_upload_filter(),
+            ApiLog.status_code >= 400,
+        )
         .group_by(ApiLog.client_id)
         .subquery()
     )
     sub_api = (
         db.query(ApiLog.client_id, func.count(ApiLog.id).label("ac"))
-        .filter(ApiLog.created_at >= since)
+        .filter(ApiLog.created_at >= since, _pipeline_upload_filter())
         .group_by(ApiLog.client_id)
         .subquery()
     )
@@ -196,21 +212,33 @@ def build_system_health(db: Session) -> dict[str, Any]:
     )
     error_spike = bool(total_hour and fivexx_hour / max(1, total_hour) > 0.15 and fivexx_hour >= 3)
 
-    week_ago = now - timedelta(days=7)
-    avg_ms = (
-        db.query(
-            func.avg(
-                func.extract("epoch", Document.processed_at - Document.created_at) * 1000.0
-            )
-        )
-        .filter(
+    def _avg_processing_ms_since(since: datetime | None) -> float | None:
+        q = db.query(
+            func.avg(func.extract("epoch", Document.processed_at - Document.created_at) * 1000.0)
+        ).filter(
             Document.status == "done",
             Document.processed_at.isnot(None),
-            Document.processed_at >= week_ago,
+            # Guard against bad data / clock skew (would yield negative durations).
+            Document.created_at.isnot(None),
+            Document.processed_at >= Document.created_at,
         )
-        .scalar()
-    )
-    avg_processing = int(float(avg_ms)) if avg_ms is not None else None
+        if since is not None:
+            q = q.filter(Document.processed_at >= since)
+        return q.scalar()
+
+    # Prefer recent signal, but always fall back to older documents so the UI
+    # shows a real number even on low-traffic installs.
+    week_ago = now - timedelta(days=7)
+    ninety_days_ago = now - timedelta(days=90)
+    avg_ms = _avg_processing_ms_since(week_ago)
+    if avg_ms is None:
+        avg_ms = _avg_processing_ms_since(ninety_days_ago)
+    if avg_ms is None:
+        avg_ms = _avg_processing_ms_since(None)
+
+    avg_processing = int(float(avg_ms)) if avg_ms is not None else 0
+    if avg_processing < 0:
+        avg_processing = 0
 
     trend = "neutral"
     if avg_processing and avg_processing > 120_000:
@@ -297,11 +325,17 @@ def build_template_intelligence(db: Session) -> dict[str, Any]:
 def build_live_api_usage(db: Session) -> dict[str, Any]:
     now = _utcnow()
     hour_ago = now - timedelta(hours=1)
-    total = db.query(func.count(ApiLog.id)).filter(ApiLog.created_at >= hour_ago).scalar() or 0
+    total = (
+        db.query(func.count(ApiLog.id))
+        .filter(ApiLog.created_at >= hour_ago, _pipeline_upload_filter())
+        .scalar()
+        or 0
+    )
     ok = (
         db.query(func.count(ApiLog.id))
         .filter(
             ApiLog.created_at >= hour_ago,
+            _pipeline_upload_filter(),
             ApiLog.status_code.isnot(None),
             ApiLog.status_code >= 200,
             ApiLog.status_code < 300,
@@ -313,6 +347,7 @@ def build_live_api_usage(db: Session) -> dict[str, Any]:
         db.query(func.count(ApiLog.id))
         .filter(
             ApiLog.created_at >= hour_ago,
+            _pipeline_upload_filter(),
             ApiLog.status_code.isnot(None),
             or_(ApiLog.status_code >= 400, ApiLog.status_code < 200),
         )

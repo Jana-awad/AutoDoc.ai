@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
   ArchiveRestore,
+  Archive,
   CheckCircle2,
   Copy,
   Eye,
@@ -30,6 +31,7 @@ import {
   deleteTemplate,
   fetchTemplateFull,
   fetchTemplates,
+  updateTemplate,
   uploadTemplateFile,
 } from "../../services/templatesApi";
 import "./templates_ai.css";
@@ -194,6 +196,30 @@ function TemplatesAi() {
       }
     },
     [closeDrawer, drawerTemplate, reload, token]
+  );
+
+  const handleArchiveToggle = useCallback(
+    async (tpl) => {
+      const current = statusBadge(tpl.status);
+      const next = current === "archived" ? "active" : "archived";
+      const verb = next === "archived" ? "Archive" : "Restore";
+      const msg =
+        next === "archived"
+          ? `Archive "${tpl.name}"? It will be hidden from users when choosing templates for uploads.`
+          : `Restore "${tpl.name}"? It will become available to users again.`;
+
+      if (!window.confirm(msg)) return;
+      setBusyId(tpl.id);
+      try {
+        await updateTemplate(tpl.id, { status: next }, { token });
+        await reload({ silent: true });
+      } catch (err) {
+        setError(`Failed to ${verb.toLowerCase()}: ${err.message}`);
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [reload, token]
   );
 
   const handleDuplicate = useCallback(
@@ -517,6 +543,15 @@ function TemplatesAi() {
                         </button>
                         <button
                           type="button"
+                          className="tpl-overview-card-btn"
+                          title={statusBadge(tpl.status) === "archived" ? "Restore" : "Archive"}
+                          onClick={() => handleArchiveToggle(tpl)}
+                          disabled={busyId === tpl.id}
+                        >
+                          {statusBadge(tpl.status) === "archived" ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+                        </button>
+                        <button
+                          type="button"
                           className="tpl-overview-card-btn tpl-overview-card-btn--danger"
                           title="Delete"
                           onClick={() => handleDelete(tpl)}
@@ -600,6 +635,19 @@ function TemplatesAi() {
                               disabled={busyId === tpl.id}
                             >
                               <Copy size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="tpl-overview-card-btn"
+                              title={statusBadge(tpl.status) === "archived" ? "Restore" : "Archive"}
+                              onClick={() => handleArchiveToggle(tpl)}
+                              disabled={busyId === tpl.id}
+                            >
+                              {statusBadge(tpl.status) === "archived" ? (
+                                <ArchiveRestore size={14} />
+                              ) : (
+                                <Archive size={14} />
+                              )}
                             </button>
                             <button
                               type="button"

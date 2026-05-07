@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
+  ChevronDown,
   KeyRound,
   Loader2,
   RefreshCw,
@@ -75,6 +76,12 @@ function AiOverview() {
   /** `live` = loaded from GET /super/ai-overview; otherwise example numbers stay visible */
   const [source, setSource] = useState("placeholder");
   const [loading, setLoading] = useState(false);
+  const [openCards, setOpenCards] = useState(() => ({
+    openai: true,
+    ocr: true,
+    tenantKeys: true,
+    webhooks: true,
+  }));
 
   const load = useCallback(async () => {
     if (token == null || token === "") {
@@ -124,6 +131,10 @@ function AiOverview() {
 
   const visionOk = Boolean(ocr?.service_account_file_exists);
   const visionEnvButMissingFile = Boolean(ocr?.service_account_env_set && !ocr?.service_account_file_exists);
+
+  const toggleCard = (key) => {
+    setOpenCards((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <div className="super-ai-overview">
@@ -181,105 +192,160 @@ function AiOverview() {
                 <div className="ai-overview-int-grid">
                   <article className="ai-overview-int-card">
                     <div className="ai-overview-int-head">
-                      <Zap size={22} aria-hidden />
-                      <h3>OpenAI (LLM)</h3>
+                      <span className="ai-overview-int-head-left">
+                        <Zap size={22} aria-hidden />
+                        <h3>OpenAI (LLM)</h3>
+                      </span>
+                      <button
+                        type="button"
+                        className="ai-overview-int-toggle"
+                        onClick={() => toggleCard("openai")}
+                        aria-expanded={openCards.openai}
+                        aria-label="Toggle OpenAI details"
+                      >
+                        <ChevronDown size={18} aria-hidden />
+                      </button>
                     </div>
-                    <StatusDot ok={openai?.configured} label={openai?.configured ? "API key configured" : "Not configured"} />
-                    <dl className="ai-overview-dl">
-                      <div>
-                        <dt>Default model</dt>
-                        <dd>{openai?.default_model || "—"}</dd>
-                      </div>
-                      <div>
-                        <dt>Key hint</dt>
-                        <dd>{openai?.key_hint || "—"}</dd>
-                      </div>
-                    </dl>
-                    <p className="ai-overview-int-note">
-                      Per-template model overrides live in the{' '}
-                      <Link to="/super/templates-ai/builder">template builder</Link>.
-                    </p>
-                  </article>
-
-                  <article className="ai-overview-int-card">
-                    <div className="ai-overview-int-head">
-                      <ScanLine size={22} aria-hidden />
-                      <h3>Google Cloud Vision (OCR)</h3>
-                    </div>
-                    <StatusDot ok={visionOk} label={visionOk ? "Service account file found" : "Not ready"} />
-                    {visionEnvButMissingFile ? (
-                      <p className="ai-overview-int-warn" role="status">
-                        <code>GOOGLE_APPLICATION_CREDENTIALS</code> is set but the file path is missing or unreadable.
+                    <div className={`ai-overview-int-body ${openCards.openai ? "open" : ""}`}>
+                      <StatusDot
+                        ok={openai?.configured}
+                        label={openai?.configured ? "API key configured" : "Not configured"}
+                      />
+                      <dl className="ai-overview-dl">
+                        <div>
+                          <dt>Default model</dt>
+                          <dd>{openai?.default_model || "—"}</dd>
+                        </div>
+                        <div>
+                          <dt>Key hint</dt>
+                          <dd>{openai?.key_hint || "—"}</dd>
+                        </div>
+                      </dl>
+                      <p className="ai-overview-int-note">
+                        Per-template model overrides live in the{" "}
+                        <Link to="/super/templates-ai/builder">template builder</Link>.
                       </p>
-                    ) : null}
-                    {!ocr?.service_account_env_set ? (
-                      <p className="ai-overview-int-warn" role="status">
-                        Set <code>GOOGLE_APPLICATION_CREDENTIALS</code> to your Vision-enabled service account JSON (see{' '}
-                        <code>backend/README.md</code>).
+                    </div>
+                  </article>
+
+                  <article className="ai-overview-int-card">
+                    <div className="ai-overview-int-head">
+                      <span className="ai-overview-int-head-left">
+                        <ScanLine size={22} aria-hidden />
+                        <h3>Google Cloud Vision (OCR)</h3>
+                      </span>
+                      <button
+                        type="button"
+                        className="ai-overview-int-toggle"
+                        onClick={() => toggleCard("ocr")}
+                        aria-expanded={openCards.ocr}
+                        aria-label="Toggle OCR details"
+                      >
+                        <ChevronDown size={18} aria-hidden />
+                      </button>
+                    </div>
+                    <div className={`ai-overview-int-body ${openCards.ocr ? "open" : ""}`}>
+                      <StatusDot ok={visionOk} label={visionOk ? "Service account file found" : "Not ready"} />
+                      {visionEnvButMissingFile ? (
+                        <p className="ai-overview-int-warn" role="status">
+                          <code>GOOGLE_APPLICATION_CREDENTIALS</code> is set but the file path is missing or unreadable.
+                        </p>
+                      ) : null}
+                      {!ocr?.service_account_env_set ? (
+                        <p className="ai-overview-int-warn" role="status">
+                          Set <code>GOOGLE_APPLICATION_CREDENTIALS</code> to your Vision-enabled service account JSON
+                          (see <code>backend/README.md</code>).
+                        </p>
+                      ) : null}
+                      <dl className="ai-overview-dl">
+                        <div>
+                          <dt>Quota project</dt>
+                          <dd>{ocr?.quota_project_id || "—"}</dd>
+                        </div>
+                        <div>
+                          <dt>PDF OCR DPI</dt>
+                          <dd>{ocr?.pdf_ocr_dpi ?? "—"}</dd>
+                        </div>
+                        <div>
+                          <dt>Skip OCR if embedded chars ≥</dt>
+                          <dd>{ocr?.pdf_embedded_min_chars_skip_ocr ?? "—"}</dd>
+                        </div>
+                        <div>
+                          <dt>Max image edge (px)</dt>
+                          <dd>{ocr?.max_image_edge_px ?? "—"}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </article>
+
+                  <article className="ai-overview-int-card">
+                    <div className="ai-overview-int-head">
+                      <span className="ai-overview-int-head-left">
+                        <KeyRound size={22} aria-hidden />
+                        <h3>Tenant API keys</h3>
+                      </span>
+                      <button
+                        type="button"
+                        className="ai-overview-int-toggle"
+                        onClick={() => toggleCard("tenantKeys")}
+                        aria-expanded={openCards.tenantKeys}
+                        aria-label="Toggle tenant API key details"
+                      >
+                        <ChevronDown size={18} aria-hidden />
+                      </button>
+                    </div>
+                    <div className={`ai-overview-int-body ${openCards.tenantKeys ? "open" : ""}`}>
+                      <p className="ai-overview-int-lede">
+                        Each client can have one <strong>programmatic API key</strong> for server-to-server calls
+                        (separate from user JWT login).
                       </p>
-                    ) : null}
-                    <dl className="ai-overview-dl">
-                      <div>
-                        <dt>Quota project</dt>
-                        <dd>{ocr?.quota_project_id || "—"}</dd>
-                      </div>
-                      <div>
-                        <dt>PDF OCR DPI</dt>
-                        <dd>{ocr?.pdf_ocr_dpi ?? "—"}</dd>
-                      </div>
-                      <div>
-                        <dt>Skip OCR if embedded chars ≥</dt>
-                        <dd>{ocr?.pdf_embedded_min_chars_skip_ocr ?? "—"}</dd>
-                      </div>
-                      <div>
-                        <dt>Max image edge (px)</dt>
-                        <dd>{ocr?.max_image_edge_px ?? "—"}</dd>
-                      </div>
-                    </dl>
+                      <dl className="ai-overview-dl">
+                        <div>
+                          <dt>Clients with key issued</dt>
+                          <dd>
+                            {tenants?.clients_with_programmatic_api_key ?? 0} / {tenants?.total_clients ?? 0}
+                          </dd>
+                        </div>
+                      </dl>
+                      <Link className="ai-overview-cta ai-overview-cta--inline" to="/super/clients-plans">
+                        Manage clients &amp; plans
+                      </Link>
+                    </div>
                   </article>
 
                   <article className="ai-overview-int-card">
                     <div className="ai-overview-int-head">
-                      <KeyRound size={22} aria-hidden />
-                      <h3>Tenant API keys</h3>
+                      <span className="ai-overview-int-head-left">
+                        <Webhook size={22} aria-hidden />
+                        <h3>Webhooks</h3>
+                      </span>
+                      <button
+                        type="button"
+                        className="ai-overview-int-toggle"
+                        onClick={() => toggleCard("webhooks")}
+                        aria-expanded={openCards.webhooks}
+                        aria-label="Toggle webhook details"
+                      >
+                        <ChevronDown size={18} aria-hidden />
+                      </button>
                     </div>
-                    <p className="ai-overview-int-lede">
-                      Each client can have one <strong>programmatic API key</strong> for server-to-server calls (separate
-                      from user JWT login).
-                    </p>
-                    <dl className="ai-overview-dl">
-                      <div>
-                        <dt>Clients with key issued</dt>
-                        <dd>
-                          {tenants?.clients_with_programmatic_api_key ?? 0} / {tenants?.total_clients ?? 0}
-                        </dd>
-                      </div>
-                    </dl>
-                    <Link className="ai-overview-cta ai-overview-cta--inline" to="/super/clients-plans">
-                      Manage clients &amp; plans
-                    </Link>
-                  </article>
-
-                  <article className="ai-overview-int-card">
-                    <div className="ai-overview-int-head">
-                      <Webhook size={22} aria-hidden />
-                      <h3>Webhooks</h3>
+                    <div className={`ai-overview-int-body ${openCards.webhooks ? "open" : ""}`}>
+                      <p className="ai-overview-int-lede">
+                        Webhook URLs are stored per tenant in workspace settings (Business / Enterprise profiles). The
+                        product UI for URL, validation, and delivery logs lives in each tenant&apos;s{" "}
+                        <strong>API &amp; integrations</strong> area.
+                      </p>
+                      <dl className="ai-overview-dl">
+                        <div>
+                          <dt>Tenants with webhook URL saved</dt>
+                          <dd>{tenants?.clients_with_webhook_url ?? 0}</dd>
+                        </div>
+                      </dl>
+                      <p className="ai-overview-int-note">
+                        Super admin does not edit another tenant&apos;s webhook from here — use impersonation or support
+                        flows when you add them.
+                      </p>
                     </div>
-                    <p className="ai-overview-int-lede">
-                      Webhook URLs are stored per tenant in workspace settings (Business / Enterprise profiles). The
-                      product UI for URL, validation, and delivery logs lives in each tenant&apos;s{' '}
-                      <strong>API &amp; integrations</strong> area.
-                    </p>
-                    <dl className="ai-overview-dl">
-                      <div>
-                        <dt>Tenants with webhook URL saved</dt>
-                        <dd>{tenants?.clients_with_webhook_url ?? 0}</dd>
-                      </div>
-                    </dl>
-                    <p className="ai-overview-int-note">
-                      Super admin does not edit another tenant&apos;s webhook from here — use impersonation or support
-                      flows when you add them.
-                    </p>
                   </article>
                 </div>
               </section>
@@ -340,33 +406,35 @@ function AiOverview() {
                     <Activity size={18} aria-hidden />
                     <span>Top logged endpoints (7 days)</span>
                   </div>
-                  <table className="ai-overview-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Endpoint</th>
-                        <th scope="col" className="ai-overview-th-num">
-                          Hits
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(!usage?.top_endpoints_7d || usage.top_endpoints_7d.length === 0) && (
+                  <div className="ai-overview-table-scroll" role="region" aria-label="Top logged endpoints table">
+                    <table className="ai-overview-table">
+                      <thead>
                         <tr>
-                          <td colSpan={2} className="ai-overview-table-empty">
-                            No API log traffic in the last 7 days yet.
-                          </td>
+                          <th scope="col">Endpoint</th>
+                          <th scope="col" className="ai-overview-th-num">
+                            Hits
+                          </th>
                         </tr>
-                      )}
-                      {(usage?.top_endpoints_7d || []).map((row) => (
-                        <tr key={row.endpoint}>
-                          <td>
-                            <code className="ai-overview-code ai-overview-code--block">{row.endpoint}</code>
-                          </td>
-                          <td className="ai-overview-td-num">{row.count}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {(!usage?.top_endpoints_7d || usage.top_endpoints_7d.length === 0) && (
+                          <tr>
+                            <td colSpan={2} className="ai-overview-table-empty">
+                              No API log traffic in the last 7 days yet.
+                            </td>
+                          </tr>
+                        )}
+                        {(usage?.top_endpoints_7d || []).map((row) => (
+                          <tr key={row.endpoint}>
+                            <td>
+                              <code className="ai-overview-code ai-overview-code--block">{row.endpoint}</code>
+                            </td>
+                            <td className="ai-overview-td-num">{row.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </section>
 
